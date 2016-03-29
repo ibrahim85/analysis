@@ -37,7 +37,7 @@ def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fil
         last_user = None
         last_context = None
         counter = None
-        for row in iterdicts(answers.sort(['user_id', 'context_name', 'term_type', 'id'])):
+        for row in iterdicts(answers.sort_values(by=['user_id', 'context_name', 'term_type', 'id'])):
             if last_user != row['user_id'] or last_context != (row['context_name'], row['term_type']):
                 last_user = row['user_id']
                 last_context = (row['context_name'], row['term_type'])
@@ -47,4 +47,4 @@ def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fil
             counter += 1
         answers = answers[~answers['user_id'].isin(invalid_users)]
 
-    return answers.sort(['user_id', 'id'])
+    return answers.sort_values(by=['user_id', 'id'])
