@@ -5,7 +5,7 @@ import format
 import math
 import matplotlib.pyplot as plt
 import output
-import raw
+from . import raw
 import seaborn as sns
 
 

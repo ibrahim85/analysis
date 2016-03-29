@@ -2,7 +2,7 @@ from pylab import rcParams
 from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import output
-import raw
+from . import raw
 
 
 @spiderpig()
