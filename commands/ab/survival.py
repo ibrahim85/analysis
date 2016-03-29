@@ -13,7 +13,7 @@ def survival_curve(length):
         xs = [x > i for x in data]
         return confidence_value_to_json(binomial_confidence_mean(xs))
     result = {}
-    for g, d in user_answers.groupby('experiment_setup_name'):
+    for g, d in user_answers.reset_index().groupby('experiment_setup_name'):
         inner_result = []
         for i in range(length):
             inner_result.append(_progress_confidence(i, d[0]))
