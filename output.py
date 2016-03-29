@@ -10,6 +10,22 @@ _SNS_PALETTE = None
 _LOCK = RLock()
 
 
+def plot_line(data, color, with_confidence=True, **kwargs):
+    plt.plot(
+        range(1, len(data) + 1),
+        [y['value'] for y in data],
+        color=color, markersize=5, **kwargs
+    )
+    if with_confidence:
+        plt.fill_between(
+            range(1, len(data) + 1),
+            [x['confidence_interval']['min'] for x in data],
+            [x['confidence_interval']['max'] for x in data],
+            color=color, alpha=0.35
+        )
+    plt.xlim(1, len(data))
+
+
 def palette():
     global _SNS_PALETTE
     if _SNS_PALETTE is None:
