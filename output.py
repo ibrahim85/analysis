@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-sns.set_style(style='white')
 _SNS_PALETTE = None
 _LOCK = RLock()
 
@@ -18,8 +17,12 @@ def palette():
     return _SNS_PALETTE
 
 
-def init_palette(palette=None, palette_name=None):
+def init_plotting(palette=None, palette_name=None, font_scale=None, style='white'):
     with _LOCK:
+        sns_kwargs = {'style': style}
+        if font_scale is not None:
+            sns_kwargs['font_scale'] = font_scale
+        sns.set(**sns_kwargs)
         global _SNS_PALETTE
         if palette is None and palette_name is None:
             _SNS_PALETTE = sns.color_palette()

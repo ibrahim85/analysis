@@ -44,4 +44,16 @@ def get_argument_parser():
         action='store',
         default=None
     )
+    p.add_argument(
+        '--style',
+        action='store',
+        dest='style',
+        default='white'
+    )
+    p.add_argument(
+        '--font-scale',
+        action='store',
+        dest='font_scale',
+        default=1.5
+    )
     return p
