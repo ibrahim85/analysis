@@ -69,7 +69,7 @@ def plot_answer_frequency_all(wrong_only=True, contexts=20, show_names=False, no
         terms, terms_data = zip(*sorted(to_plot.items(), key=lambda x: x[1][-1], reverse=True))
         plt.title(group_name[:30])
         for i in range(top):
-            sns.barplot(list(range(len(terms))), list(map(lambda x: ([0] * (top - len(x)) + x)[i], terms_data)))
+            sns.barplot(list(range(len(terms))), list(map(lambda x: ([0] * (top - len(x)) + x)[i], terms_data)), color=output.palette()[i])
         plt.xticks(plt.xticks()[0], terms, rotation=90)
     output.savefig(filename='answer_frequencies_all')
 
