@@ -59,4 +59,5 @@ def savefig(filename, output_dir, figure_extension):
     plt.tight_layout()
     filename = '{}/{}.{}'.format(output_dir, filename, figure_extension)
     plt.savefig(filename)
+    plt.close()
     msg.success(filename)
