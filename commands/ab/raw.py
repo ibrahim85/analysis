@@ -13,6 +13,31 @@ def load_user_answers(groupby=None):
 
 
 @spiderpig()
+def load_success(first=None, round_base=None):
+    answers = load_answers()
+    if first is not None:
+        answers.groupby('user_id').head(first)
+
+    def _round(x):
+        if round_base is None:
+            return x
+        return int(round_base * round(float(x * 100) / round_base)) / 100.0
+    return answers.groupby('user_id').head(n=30).groupby('user_id').apply(
+        lambda g: _round((g['item_asked_id'] == g['item_answered_id']).mean())
+    )
+
+
+@spiderpig()
+def load_school_usage(data_dir='data', school_threshold=10):
+    answers = load_answers()
+    sessions = pandas.read_csv(os.path.join(data_dir, 'ip_address.csv'), index_col=False)
+    user_ips = pandas.merge(answers, sessions, on=['session_id', 'user_id']).drop_duplicates('user_id').set_index('user_id')['ip_address']
+    ip_counts = user_ips.reset_index().groupby('ip_address').apply(len)
+    school_ips = ip_counts[ip_counts > school_threshold].reset_index()['ip_address']
+    return user_ips.isin(school_ips)
+
+
+@spiderpig()
 def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, filter_invalid_response_time=True):
     answers = pandas.read_csv(os.path.join(data_dir, 'answers.csv'), index_col=False, parse_dates=['time'])
     flashcards = pandas.read_csv(os.path.join(data_dir, 'flashcards.csv'), index_col=False)
@@ -48,3 +73,10 @@ def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fil
         answers = answers[~answers['user_id'].isin(invalid_users)]
 
     return answers.sort_values(by=['user_id', 'id'])
+
+
+@spiderpig()
+def load_ratings(data_dir='data'):
+    ratings = pandas.read_csv(os.path.join(data_dir, 'ratings.csv'), index_col=False, parse_dates=['inserted'])
+    users = load_answers()['user_id'].unique()
+    return ratings[ratings['user_id'].isin(users)]
