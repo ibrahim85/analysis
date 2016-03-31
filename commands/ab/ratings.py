@@ -3,8 +3,11 @@ from metric import binomial_confidence_mean
 import matplotlib.pyplot as plt
 import output
 import pandas
+import seaborn as sns
+from spiderpig import spiderpig
 
 
+@spiderpig()
 def ratings_per_setup(in_school=None):
     ratings = load_ratings().sort_values(by=['inserted']).drop_duplicates(['user_id'])
     answers = load_answers()
@@ -20,40 +23,34 @@ def ratings_per_setup(in_school=None):
     for setup_name, setup_data in answers.groupby('experiment_setup_name'):
         setup_users = setup_data['user_id'].unique()
         setup_ratings = ratings[ratings['user_id'].isin(setup_users)]
-        easy = binomial_confidence_mean(setup_ratings['value'] == 1)
-        appropriate = binomial_confidence_mean(setup_ratings['value'] == 2)
-        difficult = binomial_confidence_mean(setup_ratings['value'] == 3)
-        result.append({
-            'setup': setup_name,
-            'easy_value': easy[0],
-            'easy_confidence_min': easy[1][0],
-            'easy_confidence_max': easy[1][1],
-            'appropriate_value': appropriate[0],
-            'appropriate_confidence_min': appropriate[1][0],
-            'appropriate_confidence_max': appropriate[1][1],
-            'difficult_value': difficult[0],
-            'difficult_confidence_min': difficult[1][0],
-            'difficult_confidence_max': difficult[1][1],
-            'total': len(setup_ratings),
-        })
+        data = {
+            'easy': binomial_confidence_mean(setup_ratings['value'] == 1),
+            'appropriate': binomial_confidence_mean(setup_ratings['value'] == 2),
+            'difficult': binomial_confidence_mean(setup_ratings['value'] == 3),
+        }
+        for category, category_data in data.items():
+            result.append({
+                'setup': setup_name,
+                'value'.format(category): category_data[0],
+                'confidence_min'.format(category): category_data[1][0],
+                'confidence_max'.format(category): category_data[1][1],
+                'category': category,
+                'total': len(setup_ratings),
+            })
 
     return pandas.DataFrame(result)
 
 
-def plot_ratings_per_setup(in_school=None, legend=True, with_confidence=True):
+def plot_ratings_per_setup(in_school=None, with_confidence=True):
     data = ratings_per_setup(in_school=in_school)
-    for i, (r_type, marker) in enumerate(zip(['easy', 'appropriate', 'difficult'], ['o', 's', '^'])):
-        plt.plot(data['setup'], data['{}_value'.format(r_type)], label=r_type, color=output.palette()[i], marker=marker)
-        if with_confidence:
-            plt.fill_between(
-                data['setup'],
-                data['{}_confidence_min'.format(r_type)],
-                data['{}_confidence_max'.format(r_type)],
-                color=output.palette()[i], alpha=0.35
-            )
-    if legend:
-        plt.legend(loc=1)
-    plt.xlabel('Target error rate')
+    g = sns.barplot(x='setup', y='value', hue='category', data=data, hue_order=['easy', 'appropriate', 'difficult'])
+    g.set_xticklabels(g.get_xticklabels(), rotation=30)
+    g.get_legend().set_title(None)
+    g.get_legend().set_frame_on(True)
+
+    g.yaxis.grid(True)
+    plt.xlabel('AB group')
+    plt.ylabel('')
     plt.ylim(0, 1)
 
 
