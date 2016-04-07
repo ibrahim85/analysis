@@ -1,5 +1,5 @@
 from .data import get_learning_curve
-from .raw import load_answers
+from .raw import load_reference_answers
 from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import output
@@ -7,7 +7,7 @@ import output
 
 @spiderpig()
 def global_learning_curve(length, user_length, context_answer_limit, reverse):
-    answers = load_answers()
+    answers = load_reference_answers()
     result = None
     for setup, data in answers.groupby('experiment_setup_name'):
         curve = get_learning_curve(

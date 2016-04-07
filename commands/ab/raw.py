@@ -29,7 +29,7 @@ def load_success(first=None, round_base=None):
 
 @spiderpig()
 def load_school_usage(data_dir='data', school_threshold=10):
-    answers = load_answers()
+    answers = load_answers(data_dir)
     sessions = pandas.read_csv(os.path.join(data_dir, 'ip_address.csv'), index_col=False)
     user_ips = pandas.merge(answers, sessions, on=['session_id', 'user_id']).drop_duplicates('user_id').set_index('user_id')['ip_address']
     ip_counts = user_ips.reset_index().groupby('ip_address').apply(len)
@@ -38,7 +38,29 @@ def load_school_usage(data_dir='data', school_threshold=10):
 
 
 @spiderpig()
-def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, filter_invalid_response_time=True):
+def load_reference_answers():
+    answers = load_answers()
+    return answers[answers['metainfo_id'] == 1]
+
+
+@spiderpig()
+def load_answers(contexts=None):
+    answers = _load_answers()
+    if contexts:
+        answers_filter = None
+        for context in contexts:
+            context_name, term_type = context.split(':')
+            current_filter = ((answers['context_name'] == context_name) & (answers['term_type'] == term_type))
+            if answers_filter is None:
+                answers_filter = current_filter
+            else:
+                answers_filter |= current_filter
+        answers = answers[answers_filter]
+    return answers
+
+
+@spiderpig()
+def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, filter_invalid_response_time=True):
     answers = pandas.read_csv(os.path.join(data_dir, 'answers.csv'), index_col=False, parse_dates=['time'])
     flashcards = pandas.read_csv(os.path.join(data_dir, 'flashcards.csv'), index_col=False)
     setups = pandas.read_csv(os.path.join(data_dir, 'setups.csv'), index_col=False).set_index('experiment_setup_id')['experiment_setup_name'].to_dict()
@@ -72,7 +94,7 @@ def load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fil
             counter += 1
         answers = answers[~answers['user_id'].isin(invalid_users)]
 
-    return answers.sort_values(by=['user_id', 'id'])
+    return answers.sort_values(by=['id'])
 
 
 @spiderpig()

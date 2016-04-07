@@ -56,4 +56,10 @@ def get_argument_parser():
         dest='font_scale',
         default=1.5
     )
+    p.add_argument(
+        '--context',
+        type=str,
+        dest='contexts',
+        action='append'
+    )
     return p
