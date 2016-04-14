@@ -1,11 +1,35 @@
+import numpy
 import pandas
 from spiderpig import spiderpig
 
 
 @spiderpig()
+def load_difficulty(data_dir='data'):
+    answers = load_answers()
+    difficulty = pandas.read_csv('{}/difficulty.csv'.format(data_dir), index_col=None, dtype={'item_id': numpy.object})
+    return difficulty[difficulty['item_id'].isin(answers['item_asked'].unique())]
+
+
+@spiderpig()
+def load_answers(contexts=None):
+    answers = load_and_merge()
+    if contexts:
+        answers_filter = None
+        for context in contexts:
+            context_name, term_type = context.split(':')
+            current_filter = ((answers['context_name_asked'] == context_name) & (answers['term_type_asked'] == term_type))
+            if answers_filter is None:
+                answers_filter = current_filter
+            else:
+                answers_filter |= current_filter
+        answers = answers[answers_filter]
+    return answers
+
+
+@spiderpig()
 def load_and_merge(data_dir='data', language='en', answer_limit=1):
-    models_answer = pandas.read_csv('{}/proso_models_answer.csv'.format(data_dir), index_col=False, parse_dates=['time'])
-    flashcards_flashcard = pandas.read_csv('{}/proso_flashcards_flashcard.csv'.format(data_dir), index_col=False)
+    models_answer = pandas.read_csv('{}/proso_models_answer.csv'.format(data_dir), index_col=False, parse_dates=['time'], dtype={'item_answered': numpy.object, 'item_asked': numpy.object})
+    flashcards_flashcard = pandas.read_csv('{}/proso_flashcards_flashcard.csv'.format(data_dir), index_col=False, dtype={'item': numpy.object})
     flashcards_term = pandas.read_csv('{}/proso_flashcards_term.csv'.format(data_dir), index_col=False)
     flashcards_context = pandas.read_csv('{}/proso_flashcards_context.csv'.format(data_dir), index_col=False)
 
