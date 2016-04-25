@@ -29,10 +29,10 @@ def plot_score_difficulty_examples(target_probability, n):
     terms.reset_index(inplace=True)
     if n is not None:
         terms = terms.head(n=n)
-    plt.plot(terms['score'], linewidth=5, label='Score')
-    plt.xticks(list(range(len(terms))), terms['term_name_asked'], rotation=90)
-    plt.plot(terms['difficulty'], color='gray', label='Difficulty')
-    plt.xlim(0, len(terms) - 1)
+    plt.plot(np.arange(len(terms)) + 0.5, terms['score'], linewidth=5, label='Score')
+    plt.xticks(np.arange(len(terms)) + 0.5, terms['term_name_asked'], rotation=90)
+    plt.bar(np.arange(len(terms)) + 0.1, terms['difficulty'], 0.8, color='#bbbbbb', label='Prediction', edgecolor='#bbbbbb')
+    plt.xlim(0, len(terms))
     plt.legend(loc=2)
     output.savefig('score_difficulty_examples')
 
@@ -41,7 +41,7 @@ def plot_score_difficulty(target_probability):
     xs = np.linspace(0, 1, 100)
     difficulty = load_difficulty()
     plt.hist([sigmoid(-x) for x in difficulty['difficulty']], bins=10)
-    plt.xlabel('Difficulty\n(probability of correct answer on open question)')
+    plt.xlabel('Prediction\n(probability of correct answer on open question)')
     plt.ylabel('Number of items')
     plt.twinx()
     plt.plot(xs, [score_probability(target_probability, x) for x in xs], color='black', linewidth=5)
