@@ -11,6 +11,22 @@ def load_difficulty(data_dir='data'):
 
 
 @spiderpig()
+def load_answers_with_seconds_ago():
+    answers = load_answers().sort_values(by=['id'])
+    seconds_ago = numpy.empty(len(answers))
+    last_times = {}
+    for i, (user, item, time) in enumerate(answers[['user', 'item_asked', 'time']].values):
+        last_time = last_times.get((user, item))
+        if last_time is not None:
+            seconds_ago[i] = (time - last_time) / numpy.timedelta64(1, 's')
+        else:
+            seconds_ago[i] = None
+        last_times[user, item] = time
+    answers['seconds_ago'] = pandas.Series(seconds_ago, index=answers.index)
+    return answers
+
+
+@spiderpig()
 def load_answers(contexts=None):
     answers = load_and_merge()
     if contexts:
@@ -27,8 +43,13 @@ def load_answers(contexts=None):
 
 
 @spiderpig()
-def load_and_merge(data_dir='data', language='en', answer_limit=1):
-    models_answer = pandas.read_csv('{}/proso_models_answer.csv'.format(data_dir), index_col=False, parse_dates=['time'], dtype={'item_answered': numpy.object, 'item_asked': numpy.object})
+def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None):
+    models_answer = pandas.read_csv(
+        '{}/proso_models_answer.csv'.format(data_dir),
+        index_col=False, parse_dates=['time'],
+        dtype={'item_answered': numpy.object, 'item_asked': numpy.object},
+        nrows=nrows
+    )
     flashcards_flashcard = pandas.read_csv('{}/proso_flashcards_flashcard.csv'.format(data_dir), index_col=False, dtype={'item': numpy.object})
     flashcards_term = pandas.read_csv('{}/proso_flashcards_term.csv'.format(data_dir), index_col=False)
     flashcards_context = pandas.read_csv('{}/proso_flashcards_context.csv'.format(data_dir), index_col=False)

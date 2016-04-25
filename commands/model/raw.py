@@ -1,4 +1,4 @@
-from commands.all.raw import load_and_merge
+from commands.all.raw import load_answers_with_seconds_ago
 from spiderpig import spiderpig
 from random import sample
 
@@ -26,4 +26,4 @@ def load_test_set():
 
 @spiderpig()
 def load_answers():
-    return load_and_merge()[['user', 'item_asked', 'item_answered', 'time', 'guess']]
+    return load_answers_with_seconds_ago()[['user', 'item_asked', 'item_answered', 'time', 'guess', 'seconds_ago']]

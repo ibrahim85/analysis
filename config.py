@@ -62,4 +62,10 @@ def get_argument_parser():
         dest='contexts',
         action='append'
     )
+    p.add_argument(
+        '--nrows',
+        action='store',
+        dest='nrows',
+        default=None
+    )
     return p

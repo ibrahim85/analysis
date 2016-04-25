@@ -1,4 +1,4 @@
-from .evaluate import train, test_brier
+from .evaluate import train, test_brier, test_time_calibration, test_rmse
 import matplotlib.pyplot as plt
 import numpy as np
 import output
@@ -20,8 +20,7 @@ def init_parser(parser):
     return parser
 
 
-def brier_graphs(model_name, model_params):
-    model = train(model_name, model_params)[0]
+def brier_graphs(model):
     brier = test_brier(model)
     plt.figure()
     plt.plot(brier['detail']['bin_prediction_means'], brier['detail']['bin_correct_means'])
@@ -36,10 +35,18 @@ def brier_graphs(model_name, model_params):
     output.savefig('brier_detail')
 
 
-def plot_grid_search(model_name):
-    pass
+def time_callibration_graph(model):
+    time_calibration = test_time_calibration(model)
+    plt.bar(list(range(len(time_calibration))), time_calibration)
+    output.savefig('time_calibration')
 
 
 def execute(model_name, model_params):
     pass_model_params = {p.split(':')[0]: float(p.split(':')[1]) for p in model_params}
-    brier_graphs(model_name, pass_model_params)
+    model = train(model_name, pass_model_params)[0]
+    if hasattr(model, '_staircase'):
+        from pprint import pprint
+        pprint(model._staircase)
+    print('RMSE', test_rmse(model))
+    brier_graphs(model)
+    time_callibration_graph(model)

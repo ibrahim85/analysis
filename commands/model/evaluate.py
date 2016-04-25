@@ -14,11 +14,13 @@ def run(model, data):
     predictions = []
     for row in iterdicts(data):
         prediction = model.predict(
-            row['user'], row['item_asked'], row['time'], row['guess'])
+            row['user'], row['item_asked'], row['time'], row['guess'], row['seconds_ago'])
         model.update(
             row['user'], row['item_asked'], prediction,
             row['item_asked'] == row['item_answered'],
-            row['time'])
+            row['time'],
+            row['guess'],
+            row['seconds_ago'])
         predictions.append(prediction)
     return model, pandas.Series(predictions, index=data.index)
 
@@ -98,11 +100,30 @@ def brier(predictions, real, bins=20):
     }
 
 
+def time_calibration(predictions, real, seconds_ago, bins=20):
+    thresholds = [60, 90, 150, 300, 600, 1800, 10800, 86400, 259200, 2592000, 100000000]
+    data = predictions.to_frame('predictions')
+    data['real'] = real
+    data['seconds_ago'] = seconds_ago
+    bins = []
+    for t in thresholds:
+        t_data = data[data['seconds_ago'] <= t]
+        bins.append((t_data['real'] - t_data['predictions']).mean())
+    return bins
+
+
 @spiderpig()
 def test_rmse(model):
     data = load_test_set()
     predictions = test(model)
     return rmse(predictions, data['item_asked'] == data['item_answered'])
+
+
+@spiderpig()
+def test_time_calibration(model):
+    data = load_test_set()
+    predictions = test(model)
+    return time_calibration(predictions, data['item_asked'] == data['item_answered'], data['seconds_ago'])
 
 
 @spiderpig()
