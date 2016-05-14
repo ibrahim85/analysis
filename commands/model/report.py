@@ -32,13 +32,13 @@ def brier_graphs(model):
     plt.bar(bins, counts / max(counts), width=(0.5 / bin_count), alpha=0.5)
     plt.title(model.__class__.__name__)
 
-    output.savefig('brier_detail')
+    output.savefig('brier_detail_{}'.format(model.__class__.__name__))
 
 
 def time_callibration_graph(model):
     time_calibration = test_time_calibration(model)
     plt.bar(list(range(len(time_calibration))), time_calibration)
-    output.savefig('time_calibration')
+    output.savefig('time_calibration_{}'.format(model.__class__.__name__))
 
 
 def execute(model_name, model_params):
