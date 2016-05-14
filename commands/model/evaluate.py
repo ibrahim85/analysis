@@ -3,6 +3,7 @@ from .raw import load_test_set, load_train_set
 from copy import deepcopy
 from data import iterdicts
 from itertools import product
+from multiprocessing import Pool
 from spiderpig import spiderpig
 import math
 import numpy
@@ -26,19 +27,19 @@ def run(model, data):
 
 
 @spiderpig()
-def grid_search(model_name, pass_kwargs, optimize_kwargs, metric=None):
+def grid_search(model_name, pass_kwargs, optimize_kwargs, workers=1, metric=None):
+    workers_pool = Pool(processes=workers)
     if metric is None:
         metric = rmse
-    result = []
     pass_kwargs = deepcopy(pass_kwargs)
+    to_process = []
     for p in _param_grid(optimize_kwargs):
         pass_kwargs = deepcopy(pass_kwargs)
+        p = {k: round(10000 * v) / 10000.0 for (k, v) in p.items()}
         pass_kwargs.update(p)
-        row = deepcopy(pass_kwargs)
-        _, metric_value = train_with_metric(model_name, metric=metric, kwargs=pass_kwargs)
-        row['metric'] = metric_value
-        result.append(row)
-    return pandas.DataFrame(result)
+        to_process.append((model_name, metric, pass_kwargs))
+
+    return pandas.DataFrame(workers_pool.map(_grid_search_process_fun, to_process))
 
 
 @spiderpig()
@@ -142,3 +143,11 @@ def _param_grid(params):
         for v in product(*values):
             params = dict(zip(keys, v))
             yield params
+
+
+def _grid_search_process_fun(process_params):
+    model_name, metric, pass_kwargs = process_params
+    row = deepcopy(pass_kwargs)
+    _, metric_value = train_with_metric(model_name, metric=metric, kwargs=pass_kwargs)
+    row['metric'] = metric_value
+    return row

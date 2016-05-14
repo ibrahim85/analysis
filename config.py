@@ -68,4 +68,10 @@ def get_argument_parser():
         dest='nrows',
         default=None
     )
+    p.add_argument(
+        '--workers',
+        action='store',
+        dest='workers',
+        default=1
+    )
     return p
