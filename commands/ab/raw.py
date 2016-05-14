@@ -13,10 +13,12 @@ def load_user_answers(groupby=None):
 
 
 @spiderpig()
-def load_success(first=None, round_base=None):
+def load_success(first=None, round_base=None, reference=True):
     answers = load_answers()
     if first is not None:
         answers.groupby('user_id').head(first)
+    if not reference:
+        answers = answers[answers['metainfo_id'] != 1]
 
     def _round(x):
         if round_base is None:
@@ -29,7 +31,7 @@ def load_success(first=None, round_base=None):
 
 @spiderpig()
 def load_school_usage(data_dir='data', school_threshold=10):
-    answers = load_answers(data_dir)
+    answers = load_answers()
     sessions = pandas.read_csv(os.path.join(data_dir, 'ip_address.csv'), index_col=False)
     user_ips = pandas.merge(answers, sessions, on=['session_id', 'user_id']).drop_duplicates('user_id').set_index('user_id')['ip_address']
     ip_counts = user_ips.reset_index().groupby('ip_address').apply(len)
