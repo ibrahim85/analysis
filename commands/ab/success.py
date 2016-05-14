@@ -44,4 +44,3 @@ def plot_error_rate_histogram():
 
 def execute():
     plot_error_rate_histogram()
-    pass
