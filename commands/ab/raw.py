@@ -13,6 +13,18 @@ def load_user_answers(groupby=None):
 
 
 @spiderpig()
+def load_user_time(groupby=None):
+
+    def _apply(data):
+        return (data['response_time'][data['response_time'] != -1]).sum() / 1000.0
+
+    if groupby is None:
+        return load_answers().groupby('user_id').apply(_apply)
+    else:
+        return load_answers().groupby(list(set(groupby + ['user_id']))).apply(_apply)
+
+
+@spiderpig()
 def load_success(first=None, round_base=None, reference=True):
     answers = load_answers()
     if first is not None:
