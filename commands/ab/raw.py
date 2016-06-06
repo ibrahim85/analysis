@@ -46,6 +46,32 @@ def load_reference_answers():
 
 
 @spiderpig()
+def load_options(data_dir='data', contexts=None):
+    options = _load_options()
+    flashcards = pandas.read_csv(os.path.join(data_dir, 'flashcards.csv'), index_col=False)
+    if contexts:
+        flashcard_filter = None
+        for context in contexts:
+            context_name, term_type = context.split(':')
+            current_filter = ((flashcards['context_name'] == context_name) & (flashcards['term_type'] == term_type))
+            if flashcard_filter is None:
+                flashcard_filter = current_filter
+            else:
+                flashcard_filter |= current_filter
+        flashcard_item_ids = flashcards[flashcard_filter]['item_id']
+        options = options[options['item_asked_id'].isin(flashcard_item_ids)]
+    return options
+
+
+@spiderpig()
+def _load_options(data_dir='data'):
+    options = pandas.read_csv(os.path.join(data_dir, 'options.csv'), index_col=False)
+    setups = pandas.read_csv(os.path.join(data_dir, 'setups.csv'), index_col=False).set_index('experiment_setup_id')['experiment_setup_name'].to_dict()
+    options['experiment_setup_name'] = options['experiment_setup_id'].apply(lambda i: setups[i])
+    return options
+
+
+@spiderpig()
 def load_answers(contexts=None):
     answers = _load_answers()
     if contexts:
