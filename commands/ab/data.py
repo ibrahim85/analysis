@@ -70,6 +70,39 @@ def groupped_reference_series(data, balance=False, groupby='experiment_setup_nam
     return result
 
 
+def fit_learning_slope(series, length=10, bootstrap_samples=100):
+
+    def _fit_learning_curve(series):
+        references_by_attempt = map(lambda references: [r for r in references if r is not None], zip(*series))
+        learning_curve = [(numpy.mean(xs), len(xs)) for xs in references_by_attempt]
+
+        def _learn_fun(attempt, a, k):
+            return a * (1.0 / (attempt + 1) ** k)
+
+        opt, _ = curve_fit(
+            _learn_fun,
+            numpy.arange(len(learning_curve)),
+            numpy.array([x[0] for x in learning_curve]),
+            sigma=numpy.array([numpy.sqrt((x[0] * (1 - x[0])) / x[1]) for x in learning_curve])
+        )
+        return opt[1]
+
+    if len(series) == 0:
+        return pandas.DataFrame([{
+            'value': None,
+            'confidence_min': None,
+            'confidence_max': None,
+            'size': 0,
+        }])
+    confidence = bootstrap.ci(series, _fit_learning_curve, method='pi', n_samples=bootstrap_samples)
+    return pandas.DataFrame([{
+        'value': _fit_learning_curve(series),
+        'confidence_min': confidence[0],
+        'confidence_max': confidence[1],
+        'size': None,
+    }])
+
+
 def fit_learning_curve(series, length=10, bootstrap_samples=100):
 
     confidence_vals = [[] for i in range(length)]
@@ -98,6 +131,7 @@ def fit_learning_curve(series, length=10, bootstrap_samples=100):
             'value': None,
             'confidence_min': None,
             'confidence_max': None,
+            'size': 0,
         } for attempt in range(length)])
     bootstrap.ci(series, _fit_learning_curve, method='pi', n_samples=bootstrap_samples)
     return pandas.DataFrame([{
@@ -105,6 +139,7 @@ def fit_learning_curve(series, length=10, bootstrap_samples=100):
         'value': numpy.median(rs),
         'confidence_min': numpy.percentile(rs, 2.5),
         'confidence_max': numpy.percentile(rs, 97.5),
+        'size': sum(map(lambda x: x > i, series)),
     } for i, rs in enumerate(confidence_vals)])
 
 
