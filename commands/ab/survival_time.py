@@ -11,11 +11,11 @@ def survival_curve(length):
 
     def _progress_confidence(i, data):
         xs = [x > i for x in data]
-        return confidence_value_to_json(binomial_confidence_mean(xs))
+        return confidence_value_to_json(binomial_confidence_mean(xs), use_format_number=False)
     result = {}
     for g, d in user_times.reset_index().groupby('experiment_setup_name'):
         inner_result = []
-        for i in range(0, length, 10):
+        for i in range(0, length):
             inner_result.append(_progress_confidence(i, d[0]))
         result[g] = inner_result
     return result
@@ -23,7 +23,7 @@ def survival_curve(length):
 
 def plot_survival_curve(length, with_confidence):
     for i, (group_name, data) in enumerate(sorted(survival_curve(length=length).items())):
-        output.plot_line(data, color=output.palette()[i], with_confidence=with_confidence, label=group_name, xs=list(range(0, length, 10)))
+        output.plot_line(data, color=output.palette()[i], with_confidence=with_confidence, label=group_name)
     plt.legend(loc=1, frameon=True)
     plt.xlabel('Number of seconds')
     plt.ylabel('Proportion of learners')

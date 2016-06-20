@@ -16,15 +16,18 @@ def confidence_median(xs, z=1.96):
     return numpy.median(xs), (xs[lower], xs[upper])
 
 
-def confidence_value_to_json(confidence_value):
+def confidence_value_to_json(confidence_value, use_format_number=True):
     return {
-        'value': format_number(confidence_value[0]),
+        'value': format_number(confidence_value[0], use=use_format_number),
         'confidence_interval': {
-            'min': format_number(confidence_value[1][0]),
-            'max': format_number(confidence_value[1][1]),
+            'min': format_number(confidence_value[1][0], use=use_format_number),
+            'max': format_number(confidence_value[1][1], use=use_format_number),
         }
     }
 
 
-def format_number(x):
-    return float('{0:.2f}'.format(x))
+def format_number(x, use):
+    if use:
+        return float('{0:.2f}'.format(x))
+    else:
+        return x
