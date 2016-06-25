@@ -28,6 +28,9 @@ def run(model, data):
 
 @spiderpig()
 def grid_search(model_name, pass_kwargs, optimize_kwargs, workers=1, metric=None):
+    # be sure we compute train set only once
+    load_train_set()
+
     workers_pool = Pool(processes=workers)
     if metric is None:
         metric = rmse
