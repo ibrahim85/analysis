@@ -74,4 +74,9 @@ def get_argument_parser():
         dest='workers',
         default=1
     )
+    p.add_argument(
+        '--seed',
+        action='store',
+        default=None
+    )
     return p

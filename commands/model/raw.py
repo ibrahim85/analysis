@@ -1,13 +1,14 @@
 from commands.all.raw import load_answers_with_seconds_ago
 from spiderpig import spiderpig
-from random import sample
+import random
 
 
 @spiderpig()
 def load_train_test_set(test_size=0.1, seed=42):
+    random.seed(seed)
     answers = load_answers()
     all_users = set(answers['user'].unique())
-    test_users = set(sample(all_users, int(len(all_users) * test_size)))
+    test_users = set(random.sample(all_users, int(len(all_users) * test_size)))
     answers['test'] = answers['user'].isin(test_users)
     return answers
 
