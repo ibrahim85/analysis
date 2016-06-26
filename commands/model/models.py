@@ -99,26 +99,28 @@ class Elo(Model):
 
 class PFAE(Elo):
 
-    def __init__(self, elo_alpha=0.8, elo_dynamic_alpha=0.05, correct=3.4, wrong=0.2, time_shift=0.8):
+    def __init__(self, elo_alpha=0.8, elo_dynamic_alpha=0.05, correct=3.4, wrong=0.2, time_shift=0.8, freezing=True):
         Elo.__init__(self, elo_alpha, elo_dynamic_alpha)
         self._correct = correct
         self._wrong = wrong
         self._time_shift = time_shift
+        self._freezing = freezing
 
     def setup(self):
         Elo.setup(self)
-        self._local_skills = defaultdict(ZERO)
+        self._local_skills = {}
 
     def predict(self, user_id, item_id, time, guess, seconds_ago):
         if self.number_of_answers(user_id, item_id) == 0:
             return Elo.predict(self, user_id, item_id, time, guess, seconds_ago)
         user_id = str(user_id)
         item_id = str(item_id)
+        if self._freezing:
+            activation = self._local_skills.get('{} {}'.format(user_id, item_id), self._skills[user_id] - self._difficulties[item_id])
+        else:
+            activation = self._local_skills.get('{} {}'.format(user_id, item_id), 0) + self._skills[user_id] - self._difficulties[item_id]
         return _sigmoid(
-            self._local_skills[user_id] -
-            self._difficulties[item_id] +
-            self._local_skills['{} {}'.format(user_id, item_id)] +
-            self._time_shift / max(seconds_ago, 0.001),
+            activation + self._time_shift / max(seconds_ago, 0.001),
             guess
         )
 
@@ -127,15 +129,21 @@ class PFAE(Elo):
         item_id = str(item_id)
         if self.number_of_answers(user_id, item_id) == 0:
             Elo.update(self, user_id, item_id, prediction, correct, time, guess, seconds_ago)
-        elif correct:
-            self._local_skills['{} {}'.format(user_id, item_id)] += self._correct * (correct - prediction)
         else:
-            self._local_skills['{} {}'.format(user_id, item_id)] += self._wrong * (correct - prediction)
+            if '{} {}'.format(user_id, item_id) not in self._local_skills:
+                if self._freezing:
+                    self._local_skills['{} {}'.format(user_id, item_id)] = self._skills[user_id] - self._difficulties[item_id]
+                else:
+                    self._local_skills['{} {}'.format(user_id, item_id)] = 0
+            if correct:
+                self._local_skills['{} {}'.format(user_id, item_id)] += self._correct * (correct - prediction)
+            else:
+                self._local_skills['{} {}'.format(user_id, item_id)] += self._wrong * (correct - prediction)
 
 
 class Forgetting(Elo):
 
-    def __init__(self, elo_alpha=0.8, elo_dynamic_alpha=0.05, correct=1.814, wrong=0.827):
+    def __init__(self, elo_alpha=0.8, elo_dynamic_alpha=0.05, correct=1.814, wrong=0.827, freezing=True):
         Elo.__init__(self, elo_alpha, elo_dynamic_alpha)
         self._correct = correct
         self._wrong = wrong
@@ -154,10 +162,11 @@ class Forgetting(Elo):
             2592000: None,
             10 * 365 * 24 * 60 * 50: None,
         }
+        self._freezing = freezing
 
     def setup(self):
         Elo.setup(self)
-        self._local_skills = defaultdict(ZERO)
+        self._local_skills = {}
         self._staircase = {k: None for k in self._staircase.keys()}
 
     def predict(self, user_id, item_id, time, guess, seconds_ago):
@@ -165,7 +174,10 @@ class Forgetting(Elo):
             return Elo.predict(self, user_id, item_id, time, guess, seconds_ago)
         user_id = str(user_id)
         item_id = str(item_id)
-        activation = self._skills[user_id] - self._difficulties[item_id] + self._local_skills['{} {}'.format(user_id, item_id)]
+        if self._freezing:
+            activation = self._local_skills.get('{} {}'.format(user_id, item_id), self._skills[user_id] - self._difficulties[item_id])
+        else:
+            activation = self._local_skills.get('{} {}'.format(user_id, item_id), 0) + self._skills[user_id] - self._difficulties[item_id]
         return _sigmoid(activation, guess=guess, shift_activation=self._get_shift(seconds_ago))
 
     def update(self, user_id, item_id, prediction, correct, time, guess, seconds_ago):
@@ -174,7 +186,14 @@ class Forgetting(Elo):
         if self.number_of_answers(user_id, item_id) == 0:
             Elo.update(self, user_id, item_id, prediction, correct, time, guess, seconds_ago)
         else:
-            activation = self._skills[user_id] - self._difficulties[item_id] + self._local_skills['{} {}'.format(user_id, item_id)]
+            if self._freezing:
+                activation = self._local_skills.get('{} {}'.format(user_id, item_id), self._skills[user_id] - self._difficulties[item_id])
+                if '{} {}'.format(user_id, item_id) not in self._local_skills:
+                    self._local_skills['{} {}'.format(user_id, item_id)] = self._skills[user_id] - self._difficulties[item_id]
+            else:
+                activation = self._local_skills.get('{} {}'.format(user_id, item_id), 0) + self._skills[user_id] - self._difficulties[item_id]
+                if '{} {}'.format(user_id, item_id) not in self._local_skills:
+                    self._local_skills['{} {}'.format(user_id, item_id)] = 0
             self._update_shift(seconds_ago, logit(correct, guess=guess) - activation)
             if correct:
                 self._local_skills['{} {}'.format(user_id, item_id)] += self._correct * (correct - prediction)
