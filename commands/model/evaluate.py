@@ -41,8 +41,7 @@ def grid_search(model_name, pass_kwargs, optimize_kwargs, workers=1, metric=None
         p = {k: round(10000 * v) / 10000.0 for (k, v) in p.items()}
         pass_kwargs.update(p)
         to_process.append((model_name, metric, pass_kwargs))
-
-    return pandas.DataFrame(workers_pool.map(_grid_search_process_fun, to_process))
+    return pandas.DataFrame(workers_pool.map_async(_grid_search_process_fun, to_process).get(1000000000))
 
 
 @spiderpig()
