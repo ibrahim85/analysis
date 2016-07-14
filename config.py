@@ -79,4 +79,10 @@ def get_argument_parser():
         action='store',
         default=None
     )
+    p.add_argument(
+        '--only-first',
+        action='store_true',
+        default=False,
+        dest='only_first'
+    )
     return p

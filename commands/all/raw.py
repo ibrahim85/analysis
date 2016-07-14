@@ -1,6 +1,7 @@
+from data import iterdicts
+from spiderpig import spiderpig
 import numpy
 import pandas
-from spiderpig import spiderpig
 
 
 @spiderpig()
@@ -43,13 +44,15 @@ def load_answers(contexts=None):
 
 
 @spiderpig()
-def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None):
+def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None, only_first=False):
     models_answer = pandas.read_csv(
         '{}/proso_models_answer.csv'.format(data_dir),
         index_col=False, parse_dates=['time'],
         dtype={'item_answered': numpy.object, 'item_asked': numpy.object},
         nrows=nrows
     )
+    if only_first:
+        models_answer.drop_duplicates(['user', 'item_asked'], inplace=True)
     flashcards_flashcard = pandas.read_csv('{}/proso_flashcards_flashcard.csv'.format(data_dir), index_col=False, dtype={'item': numpy.object})
     flashcards_term = pandas.read_csv('{}/proso_flashcards_term.csv'.format(data_dir), index_col=False)
     flashcards_context = pandas.read_csv('{}/proso_flashcards_context.csv'.format(data_dir), index_col=False)
