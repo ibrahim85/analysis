@@ -139,7 +139,7 @@ def fit_learning_curve(series, length=10, bootstrap_samples=100):
         'value': numpy.median(rs),
         'confidence_min': numpy.percentile(rs, 2.5),
         'confidence_max': numpy.percentile(rs, 97.5),
-        'size': sum(map(lambda x: x > i, series)),
+        'size': sum(map(lambda x: len(x) > i, series)),
     } for i, rs in enumerate(confidence_vals)])
 
 
