@@ -96,6 +96,12 @@ class Elo(Model):
         item_id = str(item_id)
         return self._user_item_answers['{} {}'.format(user_id, item_id)]
 
+    def fingerprint(self):
+        return {
+            'alpha': self._alpha,
+            'dynamic_alpha': self._dynamic_alpha,
+        }
+
 
 class PFAE(Elo):
 
@@ -139,6 +145,15 @@ class PFAE(Elo):
                 self._local_skills['{} {}'.format(user_id, item_id)] += self._correct * (correct - prediction)
             else:
                 self._local_skills['{} {}'.format(user_id, item_id)] += self._wrong * (correct - prediction)
+
+    def fingerprint(self):
+        return {
+            'correct': self._correct,
+            'wrong': self._wrong,
+            'freezing': bool(self._freezing),
+            'time_shift': self._time_shift,
+            'elo': Elo.fingerprint(self),
+        }
 
 
 class Forgetting(Elo):
@@ -199,6 +214,15 @@ class Forgetting(Elo):
                 self._local_skills['{} {}'.format(user_id, item_id)] += self._correct * (correct - prediction)
             else:
                 self._local_skills['{} {}'.format(user_id, item_id)] += self._wrong * (correct - prediction)
+
+    def fingerprint(self):
+        return {
+            'correct': self._correct,
+            'wrong': self._wrong,
+            'freezing': bool(self._freezing),
+            'staircase': sorted(self._staircase.keys()),
+            'elo': Elo.fingerprint(self),
+        }
 
     def _update_shift(self, seconds_ago, diff):
         seconds_ago = max(0.01, min(10 * 365 * 24 * 60 * 50 - 1, seconds_ago))
