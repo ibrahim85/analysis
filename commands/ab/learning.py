@@ -16,7 +16,6 @@ def reference_series(length, user_length, context_answer_limit, balance):
 def global_learning_curve(length, user_length, context_answer_limit, balance):
     result = None
     for setup, series in reference_series(length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance).items():
-        # print(series)
         curve = get_learning_curve(series, length=length)
         curve['experiment_setup_name'] = setup
         result = curve if result is None else result.append(curve)
