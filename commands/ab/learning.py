@@ -36,12 +36,12 @@ def global_learning_curve_fit(length, user_length, context_answer_limit, bootstr
 def plot_learning_curve(data, legend=True, with_confidence=False):
     MARKERS = "dos^" * 10
     for i, (setup, setup_data) in enumerate(data.groupby('experiment_setup_name')):
-        plt.plot(setup_data['attempt'] + 1, setup_data['value'].apply(lambda x: int(x * 100)), label=setup, color=output.palette()[i], marker=MARKERS[i], markersize=10)
+        plt.plot(setup_data['attempt'] + 1, setup_data['value'].apply(lambda x: x * 100), label=setup, color=output.palette()[i], marker=MARKERS[i], markersize=10)
         if with_confidence:
             plt.fill_between(
                 setup_data['attempt'] + 1,
-                setup_data['confidence_min'.format(setup)].apply(lambda x: int(x * 100)),
-                setup_data['confidence_max'.format(setup)].apply(lambda x: int(x * 100)),
+                setup_data['confidence_min'.format(setup)].apply(lambda x: x * 100),
+                setup_data['confidence_max'.format(setup)].apply(lambda x: x * 100),
                 color=output.palette()[i], alpha=0.35
             )
     if legend:
