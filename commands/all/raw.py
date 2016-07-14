@@ -68,11 +68,11 @@ def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None, o
     flashcards_term.rename(columns={
         'id': 'term',
         'name': 'term_name',
-        'type': 'term_type',
+        'type': 'term_type_asked',
     }, inplace=True)
     flashcards_context.rename(columns={
         'id': 'context',
-        'name': 'context_name',
+        'name': 'context_name_asked',
     }, inplace=True)
     flashcards_flashcard.rename(columns={
         'id': 'flashcard',
@@ -83,11 +83,11 @@ def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None, o
     models_answer.drop('item', axis=1, inplace=True)
     flashcards_flashcard.drop(['active', 'description', 'identifier', 'lang'], axis=1, inplace=True)
 
-    if flashcards_term['term_type'].isnull().sum() == len(flashcards_term):
-        flashcards_term['term_type'] = flashcards_term['term_type'].apply(lambda row: '')
+    if flashcards_term['term_type_asked'].isnull().sum() == len(flashcards_term):
+        flashcards_term['term_type_asked'] = flashcards_term['term_type_asked'].apply(lambda row: '')
 
-    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_type']], on='term', how='inner')
-    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_context[['context', 'context_name']], on='context', how='inner')
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_type_asked']], on='term', how='inner')
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_context[['context', 'context_name_asked']], on='context', how='inner')
 
     models_answer = pandas.merge(models_answer, flashcards_flashcard, left_on='item_asked', right_on='item')
     models_answer.drop('item', axis=1, inplace=True)
