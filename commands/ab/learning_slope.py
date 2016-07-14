@@ -4,7 +4,6 @@ from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import numpy
 import output
-import seaborn as sns
 
 
 @spiderpig()
