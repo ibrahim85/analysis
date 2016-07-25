@@ -104,6 +104,13 @@ def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fi
     answers = pandas.read_csv(os.path.join(data_dir, 'answers.csv'), index_col=False, parse_dates=['time'])
     flashcards = pandas.read_csv(os.path.join(data_dir, 'flashcards.csv'), index_col=False)
     setups = pandas.read_csv(os.path.join(data_dir, 'setups.csv'), index_col=False).set_index('experiment_setup_id')['experiment_setup_name'].to_dict()
+    if 'reference_computed' in answers.columns:
+        answers['metainfo_id_old'] = answers['metainfo_id']
+        answers['metainfo_id'] = answers['reference_computed'].apply(lambda x: 1 if x == 't' else None)
+        invalid_users = set(answers[(answers['metainfo_id'] != 1) & (answers['metainfo_id_old'] == 1)]['user_id'].unique())
+        invalid_users |= set(answers[(answers['metainfo_id'] == 1) & (answers['guess'] != 0)]['user_id'].unique())
+        answers = answers[~answers['user_id'].isin(invalid_users)]
+        filter_invalid_tests = False
 
     answers['experiment_setup_name'] = answers['experiment_setup_id'].apply(lambda i: setups[i])
 
