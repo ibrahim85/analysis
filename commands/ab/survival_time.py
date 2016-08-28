@@ -32,4 +32,5 @@ def plot_survival_curve(length, with_confidence):
 
 
 def execute(length=60, with_confidence=False):
+    print(load_user_time(groupby=['experiment_setup_name']).reset_index()[0].max())
     plot_survival_curve(length, with_confidence)

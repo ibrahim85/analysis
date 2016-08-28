@@ -55,10 +55,11 @@ def init_plotting(palette=None, palette_name=None, font_scale=None, style='white
 
 
 @spiderpig(cached=False)
-def savefig(filename, output_dir, figure_extension):
+def savefig(filename, output_dir, figure_extension, tight_layout=True):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    plt.tight_layout()
+    if tight_layout:
+        plt.tight_layout()
     filename = '{}/{}.{}'.format(output_dir, filename, figure_extension)
     plt.savefig(filename)
     plt.close()

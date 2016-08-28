@@ -16,7 +16,7 @@ def load_user_answers(groupby=None):
 def load_user_time(groupby=None):
 
     def _apply(data):
-        return (data['response_time'][data['response_time'] != -1]).sum() / 1000.0
+        return (data['response_time'][data['response_time'] != -1]).apply(lambda x: min(x / 1000.0, 30)).sum()
 
     if groupby is None:
         return load_answers().groupby('user_id').apply(_apply)
@@ -100,10 +100,18 @@ def load_answers(contexts=None):
 
 
 @spiderpig()
-def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, filter_invalid_response_time=True):
+def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, filter_invalid_response_time=True, setups=None):
     answers = pandas.read_csv(os.path.join(data_dir, 'answers.csv'), index_col=False, parse_dates=['time'])
     flashcards = pandas.read_csv(os.path.join(data_dir, 'flashcards.csv'), index_col=False)
-    setups = pandas.read_csv(os.path.join(data_dir, 'setups.csv'), index_col=False).set_index('experiment_setup_id')['experiment_setup_name'].to_dict()
+    all_setups = pandas.read_csv(os.path.join(data_dir, 'setups.csv'), index_col=False).set_index('experiment_setup_id')['experiment_setup_name'].to_dict()
+
+    answers['experiment_setup_name'] = answers['experiment_setup_id'].apply(lambda i: all_setups[i])
+    if setups is not None and len(setups) > 0:
+        answers = answers[answers['experiment_setup_name'].isin(setups)]
+
+    valid_users = [u for (u, n) in answers.groupby('user_id').apply(len).to_dict().items() if n >= answer_limit]
+    answers = answers[answers['user_id'].isin(valid_users)]
+
     if 'reference_computed' in answers.columns:
         answers['metainfo_id_old'] = answers['metainfo_id']
         answers['metainfo_id'] = answers['reference_computed'].apply(lambda x: 1 if x == 't' else None)
@@ -111,11 +119,6 @@ def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fi
         invalid_users |= set(answers[(answers['metainfo_id'] == 1) & (answers['guess'] != 0)]['user_id'].unique())
         answers = answers[~answers['user_id'].isin(invalid_users)]
         filter_invalid_tests = False
-
-    answers['experiment_setup_name'] = answers['experiment_setup_id'].apply(lambda i: setups[i])
-
-    valid_users = [u for (u, n) in answers.groupby('user_id').apply(len).to_dict().items() if n >= answer_limit]
-    answers = answers[answers['user_id'].isin(valid_users)]
 
     if filter_invalid_response_time:
         invalid_users = answers[answers['response_time'] < 0]['user_id'].unique()

@@ -1,5 +1,5 @@
 from . import raw
-from .data import get_learning_curve, fit_learning_curve, groupped_reference_series
+from .data import fit_learning_curve, groupped_reference_series
 from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import output
@@ -46,35 +46,25 @@ def create_A_A_groups_with_attrition(group_name, strength):
 
 
 @spiderpig()
-def A_A_reference_series(group_name, create_group_param, length, user_length, context_answer_limit, balance):
+def A_A_reference_series(group_name, create_group_param, length, user_length, context_answer_limit):
     answers = create_A_A_groups(group_name, create_group_param) if isinstance(create_group_param, int) else create_A_A_groups_with_attrition(group_name, create_group_param)
-    return groupped_reference_series(answers, length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance)
+    return groupped_reference_series(answers, length=length, user_length=user_length, context_answer_limit=context_answer_limit)
 
 
 @spiderpig()
-def A_A_learning_curve(group_name, create_group_param, length, user_length, context_answer_limit, balance):
-    result = None
-    for setup, series in A_A_reference_series(group_name, create_group_param, length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance).items():
-        curve = get_learning_curve(series, length=length)
-        curve['experiment_setup_name'] = setup
-        result = curve if result is None else result.append(curve)
-    return result
-
-
-@spiderpig()
-def A_A_learning_curve_fit(group_name, create_group_param, length, user_length, context_answer_limit, bootstrap_samples, balance):
-    result = None
-    for setup, series in A_A_reference_series(group_name, create_group_param, length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance).items():
-        curve = fit_learning_curve(series, length=length, bootstrap_samples=bootstrap_samples)
-        curve['experiment_setup_name'] = setup
-        result = curve if result is None else result.append(curve)
-    return result
+def A_A_learning_curve(group_name, create_group_param, length, user_length, context_answer_limit):
+    group_series = A_A_reference_series(group_name, create_group_param, length=length, user_length=user_length, context_answer_limit=context_answer_limit)
+    not_balanced = fit_learning_curve(group_series, length=length, balance=False)
+    not_balanced['balanced'] = not_balanced['value'].apply(lambda x: False)
+    balanced = fit_learning_curve(group_series, length=length, balance=True)
+    balanced['balanced'] = balanced['value'].apply(lambda x: True)
+    return balanced.append(not_balanced)
 
 
 @spiderpig()
 def A_A_attrition_bias(group_name, create_group_param, balance):
     answers = create_A_A_groups(group_name, create_group_param) if isinstance(create_group_param, int) else create_A_A_groups_with_attrition(group_name, create_group_param)
-    groupped_series = groupped_reference_series(answers, balance=balance, require_length=False, limit_length=True)
+    groupped_series = groupped_reference_series(answers, require_length=False, limit_length=True)
     result = []
     for group_name, series in groupped_series.items():
         for i in range(10):
@@ -125,16 +115,18 @@ def plot_learning_curve(data, legend=True, with_confidence=False):
 
 
 def execute(group_name, factor=0.01):
+    data_biased = A_A_learning_curve(group_name, factor, 10, user_length=None, context_answer_limit=100)
+    data_pure = A_A_learning_curve(group_name, 2, 10, user_length=None, context_answer_limit=100)
     plt.gcf().set_size_inches(15, 10)
     plt.subplot(221)
     plt.title('Fitted learning curve')
-    plot_learning_curve(A_A_learning_curve_fit(group_name, factor, 10, user_length=None, context_answer_limit=100, bootstrap_samples=1000, balance=False), with_confidence=True)
+    plot_learning_curve(data_biased[(data_biased['variable'] == 'fit') & ~data_biased['balanced']], with_confidence=True)
     plt.subplot(222)
     plt.title('Fitted learning curve with balancing')
-    plot_learning_curve(A_A_learning_curve_fit(group_name, factor, 10, user_length=None, context_answer_limit=100, bootstrap_samples=1000, balance=True), with_confidence=True)
+    plot_learning_curve(data_biased[(data_biased['variable'] == 'fit') & data_biased['balanced']], with_confidence=True)
     plt.subplot(223)
     plt.title('Fitted learning curve\n(pure A-A experiment)')
-    plot_learning_curve(A_A_learning_curve_fit(group_name, 2, 10, user_length=None, context_answer_limit=100, bootstrap_samples=1000, balance=False), with_confidence=True)
+    plot_learning_curve(data_pure[(data_pure['variable'] == 'fit') & ~data_pure['balanced']], with_confidence=True)
     plt.subplot(224)
     plt.title('Attrition bias')
     plot_attrition_bias(A_A_attrition_bias(group_name, factor, False), with_confidence=True)

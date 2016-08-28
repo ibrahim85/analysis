@@ -85,4 +85,10 @@ def get_argument_parser():
         default=False,
         dest='only_first'
     )
+    p.add_argument(
+        '--setups',
+        nargs='*',
+        default=None,
+        dest='setups'
+    )
     return p

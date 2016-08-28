@@ -1,36 +1,27 @@
-from .data import get_learning_curve, fit_learning_curve, groupped_reference_series
+from .data import fit_learning_curve, groupped_reference_series
 from .raw import load_reference_answers
 from pylab import rcParams
 from spiderpig import spiderpig
 import matplotlib.pyplot as plt
+import numpy
 import output
 
 
 @spiderpig()
-def reference_series(length, user_length, context_answer_limit, balance):
+def reference_series(length, user_length, context_answer_limit):
     answers = load_reference_answers()
-    return groupped_reference_series(answers, length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance)
+    return groupped_reference_series(answers, length=length, user_length=user_length, context_answer_limit=context_answer_limit)
 
 
 @spiderpig()
-def global_learning_curve(length, user_length, context_answer_limit, balance):
-    result = None
-    for setup, series in reference_series(length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance).items():
-        curve = get_learning_curve(series, length=length)
-        curve['experiment_setup_name'] = setup
-        result = curve if result is None else result.append(curve)
-    return result
-
-
-@spiderpig()
-def global_learning_curve_fit(length, user_length, context_answer_limit, bootstrap_samples, balance):
-    result = None
-    for setup, series in reference_series(length=length, user_length=user_length, context_answer_limit=context_answer_limit, balance=balance).items():
-        # print(series)
-        curve = fit_learning_curve(series, length=length, bootstrap_samples=bootstrap_samples)
-        curve['experiment_setup_name'] = setup
-        result = curve if result is None else result.append(curve)
-    return result
+def global_learning_curve(length, user_length, context_answer_limit, bootstrap_samples):
+    group_series = reference_series(length=length, user_length=user_length, context_answer_limit=context_answer_limit)
+    not_balanced = fit_learning_curve(group_series, length=length, balance=False, bootstrap_samples=bootstrap_samples)
+    not_balanced['balanced'] = not_balanced['value'].apply(lambda x: False)
+    return not_balanced
+    # balanced = fit_learning_curve(group_series, length=length, balance=True, bootstrap_samples=bootstrap_samples)
+    # balanced['balanced'] = balanced['value'].apply(lambda x: True)
+    # return balanced.append(not_balanced)
 
 
 def plot_learning_curve(data, legend=True, with_confidence=False):
@@ -50,28 +41,61 @@ def plot_learning_curve(data, legend=True, with_confidence=False):
     plt.ylim(0, 60)
 
 
-def plot_global_learning_curve(length, user_length, context_answer_limit, with_confidence, bootstrap_samples, balance):
-    global_curve = global_learning_curve(
-        length=length, user_length=user_length,
-        context_answer_limit=context_answer_limit
-    )
-    global_curve_fit = global_learning_curve_fit(
-        length=length, user_length=user_length,
-        context_answer_limit=context_answer_limit, bootstrap_samples=bootstrap_samples
-    )
-    rcParams['figure.figsize'] = 15, 5
-    plt.subplot(121)
-    plt.ylabel('Error rate (%)')
+def plot_global_learning_slope(length, user_length, context_answer_limit, with_confidence, bootstrap_samples, balance):
+    rcParams['figure.figsize'] = 7.5, 5
+    data = global_learning_curve(length, user_length, context_answer_limit, bootstrap_samples)
+    if not balance:
+        data = data[~data['balanced']]
+    for i, (data_balanced, data) in enumerate(data[data['variable'] == 'slope'].groupby('balanced')):
+        data = data.sort_values(by='experiment_setup_name')
+        plt.bar(
+            numpy.arange(len(data)) + i * 0.4,
+            data['value'], 0.4 if balance else 0.8,
+            color=output.palette()[i],
+            label=None if balance else ('balanced' if data_balanced else 'not balanced'),
+            yerr=[data['value'] - data['confidence_min'], data['confidence_max'] - data['value']],
+            error_kw={'ecolor': 'black'},
+        )
+        plt.xticks(
+            numpy.arange(len(data)) + 0.4,
+            data['experiment_setup_name']
+        )
+    if balance:
+        plt.legend(frameon=True, loc=3)
+    plt.xlabel('Condition')
+    plt.ylabel('k')
+    plt.gca().yaxis.grid(True)
+    output.savefig('learning_slope')
+
+
+def plot_global_learning_curve(length, user_length, context_answer_limit, with_confidence, bootstrap_samples, balance, vertical):
+    if vertical:
+        rcParams['figure.figsize'] = 7.5, 10
+    else:
+        rcParams['figure.figsize'] = 15, 5
+    data = global_learning_curve(length, user_length, context_answer_limit, bootstrap_samples)
+    balance_filter = data['balanced'] if balance else ~data['balanced']
+    plt.subplot(211) if vertical else plt.subplot(121)
     plt.title('Coarse data')
-    plot_learning_curve(global_curve, with_confidence=with_confidence)
-    plt.subplot(122)
+    plot_learning_curve(data[(data['variable'] == 'raw') & balance_filter], with_confidence=with_confidence)
+    plt.ylabel('Error rate')
+    plt.subplot(212) if vertical else plt.subplot(122)
     plt.title('Fitted power law')
-    plot_learning_curve(global_curve_fit, with_confidence=with_confidence)
-    output.savefig('global_learning_raw')
+    if vertical:
+        plt.ylabel('Error rate')
+    plot_learning_curve(data[(data['variable'] == 'fit') & balance_filter], with_confidence=with_confidence)
+    output.savefig('learning_curve')
 
 
-def execute(length=10, user_length=None, context_answer_limit=100, with_confidence=False, bootstrap_samples=1000, balance=False):
+def execute(length=10, user_length=None, context_answer_limit=100, with_confidence=False, bootstrap_samples=100, balance=False, vertical=False):
     plot_global_learning_curve(
+        length=length, user_length=user_length,
+        context_answer_limit=context_answer_limit,
+        with_confidence=with_confidence, bootstrap_samples=bootstrap_samples,
+        balance=balance,
+        vertical=vertical
+    )
+    plot_global_learning_slope(
         length=length, user_length=user_length,
         context_answer_limit=context_answer_limit,
         with_confidence=with_confidence, bootstrap_samples=bootstrap_samples,
