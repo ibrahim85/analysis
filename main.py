@@ -5,6 +5,7 @@ import commands.all
 import commands.ab
 import commands.model
 import commands.importance
+import commands.anatomy
 import output
 from spiderpig import run_spiderpig
 from config import get_argument_parser
@@ -17,6 +18,7 @@ if __name__ == '__main__':
             'all': commands.all,
             'model': commands.model,
             'imp': commands.importance,
+            'anatomy': commands.anatomy,
         },
         argument_parser=get_argument_parser(),
         setup_functions=[output.init_plotting]
