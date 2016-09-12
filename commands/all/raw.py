@@ -1,14 +1,61 @@
-from data import iterdicts
 from spiderpig import spiderpig
 import numpy
+import os.path
 import pandas
 
 
 @spiderpig()
 def load_difficulty(data_dir='data'):
+    if not os.path.exists('{}/difficulty.csv'.format(data_dir)):
+        return None
     answers = load_answers()
     difficulty = pandas.read_csv('{}/difficulty.csv'.format(data_dir), index_col=None, dtype={'item_id': numpy.object})
+    difficulty['probability'] = difficulty['value'].apply(lambda v: 1 / (1 + numpy.exp(v)))
     return difficulty[difficulty['item_id'].isin(answers['item_asked'].unique())]
+
+
+@spiderpig(cached=False)
+def load_misanswers():
+    answers = load_answers()
+    answers = answers[answers['item_asked'] != answers['item_answered']]
+    return answers.groupby(['flashcard_id_asked', 'flashcard_id_answered']).apply(len).reset_index().rename(columns={0: 'misanswers'})
+
+
+@spiderpig()
+def load_flashcards(data_dir='data', language='en'):
+    flashcards_flashcard = pandas.read_csv('{}/proso_flashcards_flashcard.csv'.format(data_dir), index_col=False, dtype={'item': numpy.object})
+    flashcards_term = pandas.read_csv('{}/proso_flashcards_term.csv'.format(data_dir), index_col=False)
+    flashcards_context = pandas.read_csv('{}/proso_flashcards_context.csv'.format(data_dir), index_col=False)
+    flashcards_term = flashcards_term[flashcards_term['lang'] == language]
+    flashcards_context = flashcards_context[flashcards_context['lang'] == language]
+    flashcards_flashcard = flashcards_flashcard[flashcards_flashcard['term'].isin(flashcards_term['id'].unique())]
+    flashcards_flashcard = flashcards_flashcard[flashcards_flashcard['context'].isin(flashcards_context['id'].unique())]
+
+    flashcards_term.rename(columns={
+        'id': 'term',
+        'name': 'term_name',
+        'identifier': 'term_id'
+    }, inplace=True)
+    flashcards_context.rename(columns={
+        'id': 'context',
+        'name': 'context_name',
+        'identifier': 'context_id'
+    }, inplace=True)
+    flashcards_flashcard.rename(columns={
+        'id': 'flashcard',
+        'identifier': 'flashcard_id'
+    }, inplace=True)
+    flashcards_flashcard.drop(['active', 'description', 'lang'], axis=1, inplace=True)
+
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_id']], on='term', how='inner')
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_context[['context', 'context_name', 'context_id']], on='context', how='inner')
+
+    difficulty = load_difficulty()
+    if difficulty is not None:
+        difficulty.rename(columns={'value': 'difficulty', 'item_id': 'item', 'probability': 'difficulty_prob'}, inplace=True)
+        flashcards_flashcard = pandas.merge(flashcards_flashcard, difficulty, on='item', how='inner')
+
+    return flashcards_flashcard
 
 
 @spiderpig()
@@ -68,26 +115,29 @@ def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None, o
     flashcards_term.rename(columns={
         'id': 'term',
         'name': 'term_name',
-        'type': 'term_type_asked',
+        'type': 'term_type',
+        'identifier': 'term_id',
     }, inplace=True)
     flashcards_context.rename(columns={
         'id': 'context',
-        'name': 'context_name_asked',
+        'name': 'context_name',
+        'identifier': 'context_id',
     }, inplace=True)
     flashcards_flashcard.rename(columns={
         'id': 'flashcard',
+        'identifier': 'flashcard_id',
     }, inplace=True)
     models_answer.rename(columns={
         'context': 'practice_filter',
     }, inplace=True)
     models_answer.drop('item', axis=1, inplace=True)
-    flashcards_flashcard.drop(['active', 'description', 'identifier', 'lang'], axis=1, inplace=True)
+    flashcards_flashcard.drop(['active', 'description', 'lang'], axis=1, inplace=True)
 
-    if flashcards_term['term_type_asked'].isnull().sum() == len(flashcards_term):
-        flashcards_term['term_type_asked'] = flashcards_term['term_type_asked'].apply(lambda row: '')
+    if flashcards_term['term_type'].isnull().sum() == len(flashcards_term):
+        flashcards_term['term_type'] = flashcards_term['term_type'].apply(lambda row: '')
 
-    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_type_asked']], on='term', how='inner')
-    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_context[['context', 'context_name_asked']], on='context', how='inner')
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_type', 'term_id']], on='term', how='inner')
+    flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_context[['context', 'context_name', 'context_id']], on='context', how='inner')
 
     models_answer = pandas.merge(models_answer, flashcards_flashcard, left_on='item_asked', right_on='item')
     models_answer.drop('item', axis=1, inplace=True)

@@ -91,4 +91,9 @@ def get_argument_parser():
         default=None,
         dest='setups'
     )
+    p.add_argument(
+        '--flashcards',
+        default=None,
+        dest='flashcards_file'
+    )
     return p
