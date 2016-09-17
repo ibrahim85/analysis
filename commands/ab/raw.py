@@ -107,6 +107,7 @@ def _load_answers(data_dir='data', answer_limit=1, filter_invalid_tests=True, fi
 
     answers['experiment_setup_name'] = answers['experiment_setup_id'].apply(lambda i: all_setups[i])
     if setups is not None and len(setups) > 0:
+        setups = [int(s) if s.isdigit() else s for s in setups]
         answers = answers[answers['experiment_setup_name'].isin(setups)]
 
     valid_users = [u for (u, n) in answers.groupby('user_id').apply(len).to_dict().items() if n >= answer_limit]
