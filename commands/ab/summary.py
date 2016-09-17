@@ -73,11 +73,10 @@ def execute():
             error_kw={'ecolor': 'black'},
         )
 
-    rcParams['figure.figsize'] = 5, 7.5
-    # learning
-    plt.subplot(311)
-    data = learning[learning['variable'] == 'quit_score'].sort_values(by='experiment_setup_name')
-    print(data)
+    rcParams['figure.figsize'] = 5, 10
+    # learning slope
+    plt.subplot(411)
+    data = learning[learning['variable'] == 'slope'].sort_values(by='experiment_setup_name')
     plt.title('(A) Learning slope')
     plt.bar(
         0.1 + numpy.arange(len(data)),
@@ -86,7 +85,26 @@ def execute():
         yerr=[data['value'] - data['confidence_min'], data['confidence_max'] - data['value']],
         error_kw={'ecolor': 'black'},
     )
-    # plt.ylim(0.4, 0.5)
+    plt.ylim(0.2, 0.5)
+    plt.ylabel('Learning slope', labelpad=-20)
+    plt.yticks(
+        plt.yticks()[0],
+        [plt.yticks()[0][0]] + [''] * (len(plt.yticks()[0]) - 2) + [plt.yticks()[0][-1]]
+    )
+    plt.gca().yaxis.grid(True)
+    plt.xticks(numpy.arange(len(data)) + 0.4, [''] * len(data))
+    # quit score
+    plt.subplot(412)
+    data = learning[learning['variable'] == 'quit_score'].sort_values(by='experiment_setup_name')
+    plt.title('(B) Quit score')
+    plt.bar(
+        0.1 + numpy.arange(len(data)),
+        data['value'], 0.8,
+        color=output.palette()[0],
+        yerr=[data['value'] - data['confidence_min'], data['confidence_max'] - data['value']],
+        error_kw={'ecolor': 'black'},
+    )
+    plt.ylim(0.4, 0.5)
     plt.ylabel('Quit score', labelpad=-20)
     plt.yticks(
         plt.yticks()[0],
@@ -94,9 +112,10 @@ def execute():
     )
     plt.gca().yaxis.grid(True)
     plt.xticks(numpy.arange(len(data)) + 0.4, [''] * len(data))
+
     # short-term
-    plt.subplot(312)
-    plt.title('(B) Short-term survival')
+    plt.subplot(413)
+    plt.title('(C) Short-term survival')
     _survival(survival, 0, 10, '10 ans.')
     _survival(survival_time, 1, 60, '1 min.')
     plt.ylim(0.75, 0.9)
@@ -109,12 +128,12 @@ def execute():
     plt.legend(loc=3, frameon=True, ncol=2)
     plt.xticks(numpy.arange(len(data)) + 0.4, [''] * len(data))
     # long-term
-    plt.subplot(313)
-    plt.title('(C) Long-term survival')
+    plt.subplot(414)
+    plt.title('(D) Long-term survival')
     _survival(survival, 0, 100, '100 ans.')
     _survival(survival_time, 1, 600, '10 min.')
-    plt.ylim(0, 0.4)
-    plt.ylabel('Users (%)', labelpad=-30)
+    plt.ylim(0.1, 0.4)
+    plt.ylabel('Users (%)', labelpad=-20)
     plt.yticks(
         plt.yticks()[0],
         [plt.yticks()[0][0]] + [''] * (len(plt.yticks()[0]) - 2) + [plt.yticks()[0][-1]]

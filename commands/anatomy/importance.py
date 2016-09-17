@@ -39,12 +39,12 @@ def execute(bins=10):
     data = data[data['term_id'].apply(lambda x: x.startswith('A'))]
     data = pandas.merge(data, load_radiopaedia_terms(), on=['term_id', 'term_name'], how='inner')
     load_radiopaedia_terms()
-    g = sns.pairplot(data, vars=['search_results_log', 'degree_in', 'pagerank', 'difficulty_prob'])
+    g = sns.pairplot(data, vars=['search_results_log', 'pagerank', 'difficulty_prob'])
     print('TOP PAGERANK')
-    print(data.sort_values(by='pagerank', ascending=False)[['term_name', 'degree_in', 'difficulty_prob']].tail(n=20))
+    print(data.sort_values(by='pagerank', ascending=False)[['term_name', 'difficulty_prob']].tail(n=20))
     print()
     print('BOTTOM PAGERANK')
-    print(data.sort_values(by='pagerank')[['term_name', 'degree_in', 'difficulty_prob']].tail(n=20))
+    print(data.sort_values(by='pagerank')[['term_name', 'difficulty_prob']].tail(n=20))
     print()
     for ax in g.axes.flat:
         if ax.get_xlabel() in ['difficulty_prob', 'pagerank']:
