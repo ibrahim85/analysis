@@ -9,9 +9,9 @@ import pandas
 
 
 @spiderpig()
-def attrition_bias(length, user_length, context_answer_limit, balance):
+def attrition_bias(length, user_length, context_answer_limit):
     answers = load_reference_answers()
-    groupped_series = groupped_reference_series(answers, balance=balance,
+    groupped_series = groupped_reference_series(answers,
         length=10, context_answer_limit=context_answer_limit,
         user_length=user_length, require_length=False, limit_length=True)
     result = []
@@ -30,8 +30,8 @@ def attrition_bias(length, user_length, context_answer_limit, balance):
     return pandas.DataFrame(result)
 
 
-def plot_attrition_bias(length, user_length, context_answer_limit, with_confidence, balance):
-    data = attrition_bias(length, user_length, context_answer_limit, balance)
+def plot_attrition_bias(length, user_length, context_answer_limit, with_confidence):
+    data = attrition_bias(length, user_length, context_answer_limit)
     MARKERS = "dos^" * 10
     for i, (setup, setup_data) in enumerate(data.groupby('experiment_setup_name')):
         plt.plot(setup_data['length'], setup_data['value'].apply(lambda x: x * 100), label=setup, color=output.palette()[i], marker=MARKERS[i], markersize=10)
@@ -48,5 +48,5 @@ def plot_attrition_bias(length, user_length, context_answer_limit, with_confiden
     output.savefig('attrition_bias')
 
 
-def execute(length=10, user_length=None, context_answer_limit=100, with_confidence=True, balance=False):
-    plot_attrition_bias(length, user_length, context_answer_limit, with_confidence, balance)
+def execute(length=10, user_length=None, context_answer_limit=100, with_confidence=True):
+    plot_attrition_bias(length, user_length, context_answer_limit, with_confidence)
