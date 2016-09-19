@@ -101,7 +101,7 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
     confidence_quit_score = defaultdict(list)
 
     def _fit_learning_curve(group_series):
-        to_fit = balance_series(group_series, length) if balance else group_series
+        to_fit = balance_series(group_series) if balance else group_series
         first = numpy.mean([s[0] for series in group_series.values() for s in series])
 
         if fix_beginning:

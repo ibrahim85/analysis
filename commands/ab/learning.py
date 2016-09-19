@@ -18,10 +18,10 @@ def global_learning_curve(length, user_length, context_answer_limit, bootstrap_s
     group_series = reference_series(length=length, user_length=user_length, context_answer_limit=context_answer_limit)
     not_balanced = fit_learning_curve(group_series, length=length, balance=False, bootstrap_samples=bootstrap_samples)
     not_balanced['balanced'] = not_balanced['value'].apply(lambda x: False)
-    return not_balanced
-    # balanced = fit_learning_curve(group_series, length=length, balance=True, bootstrap_samples=bootstrap_samples)
-    # balanced['balanced'] = balanced['value'].apply(lambda x: True)
-    # return balanced.append(not_balanced)
+    # return not_balanced
+    balanced = fit_learning_curve(group_series, length=length, balance=True, bootstrap_samples=bootstrap_samples)
+    balanced['balanced'] = balanced['value'].apply(lambda x: True)
+    return balanced.append(not_balanced)
 
 
 def plot_learning_curve(data, legend=True, with_confidence=False):
