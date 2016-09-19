@@ -99,6 +99,7 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
     confidence_fit_vals = defaultdict(lambda: [[] for i in range(length)])
     confidence_fit_slopes = defaultdict(list)
     confidence_quit_score = defaultdict(list)
+    confidence_size = defaultdict(lambda: [[] for i in range(length)])
 
     def _fit_learning_curve(group_series):
         to_fit = balance_series(group_series) if balance else group_series
@@ -114,6 +115,8 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
         for group_name, group_data in to_fit.items():
             references_by_attempt = map(lambda references: [r for r in references if r is not None], zip(*group_data))
             learning_curve = [(numpy.mean(xs), len(xs)) for xs in references_by_attempt]
+            for i, (_, size) in enumerate(learning_curve):
+                confidence_size[group_name][i] = size
             confidence_quit_score[group_name].append(numpy.mean([[r for r in s if r is not None][-1] for s in group_data]))
             for i, (point, _) in enumerate(learning_curve):
                 confidence_vals[group_name][i].append(point)
@@ -150,6 +153,14 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
                 'value': numpy.median(confidence_fit_vals[group_name][attempt]),
                 'confidence_min': numpy.percentile(confidence_fit_vals[group_name][attempt], 2.5),
                 'confidence_max': numpy.percentile(confidence_fit_vals[group_name][attempt], 97.5),
+            })
+            result.append({
+                'experiment_setup_name': group_name,
+                'variable': 'size',
+                'attempt': attempt,
+                'value': numpy.median(confidence_size[group_name][attempt]),
+                'confidence_min': numpy.percentile(confidence_size[group_name][attempt], 2.5),
+                'confidence_max': numpy.percentile(confidence_size[group_name][attempt], 97.5),
             })
         result.append({
             'experiment_setup_name': group_name,
