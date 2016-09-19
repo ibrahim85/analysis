@@ -13,6 +13,16 @@ def load_user_answers(groupby=None):
 
 
 @spiderpig()
+def load_context_size():
+    return load_answers().drop_duplicates(['item_asked_id']).groupby(['context_name', 'term_type']).apply(len).reset_index().rename(columns={0: 'context_size'})
+
+
+@spiderpig()
+def load_context_difficulty():
+    return load_reference_answers().drop_duplicates(['item_asked_id', 'user_id']).groupby(['context_name', 'term_type']).apply(lambda g: (g['item_asked_id'] != g['item_answered_id']).mean()).reset_index().rename(columns={0: 'context_difficulty'})
+
+
+@spiderpig()
 def load_user_time(groupby=None):
 
     def _apply(data):
