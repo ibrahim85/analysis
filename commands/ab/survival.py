@@ -21,15 +21,17 @@ def survival_curve(length):
     return result
 
 
-def plot_survival_curve(length, with_confidence):
+def plot_survival_curve(length, with_confidence, legend=False):
     for i, (group_name, data) in enumerate(sorted(survival_curve(length=length).items())):
         output.plot_line(data, color=output.palette()[i], with_confidence=with_confidence, label=group_name)
-    plt.legend(loc=1, frameon=True)
+    if legend:
+        plt.legend(loc=1)
+    plt.xlim(1, length)
     plt.xlabel('Number of attempts')
     plt.ylabel('Proportion of learners')
     plt.ylim(0, 1)
-    output.savefig(filename='survival_curve')
 
 
 def execute(length=60, with_confidence=False):
     plot_survival_curve(length, with_confidence)
+    output.savefig(filename='survival_curve')

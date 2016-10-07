@@ -23,11 +23,9 @@ def ratings_per_setup(in_school=None):
     for setup_name, setup_data in answers.groupby('experiment_setup_name'):
         setup_users = setup_data['user_id'].unique()
         setup_ratings = ratings[ratings['user_id'].isin(setup_users)]
-        data = {
-            'easy': binomial_confidence_mean(setup_ratings['value'] == 1),
-            'appropriate': binomial_confidence_mean(setup_ratings['value'] == 2),
-            'difficult': binomial_confidence_mean(setup_ratings['value'] == 3),
-        }
+        data = {}
+        for label in setup_ratings['label'].unique():
+            data[label] = binomial_confidence_mean(setup_ratings['label'] == label)
         for category, category_data in data.items():
             result.append({
                 'setup': setup_name,
@@ -43,7 +41,7 @@ def ratings_per_setup(in_school=None):
 
 def plot_ratings_per_setup(in_school=None, with_confidence=True):
     data = ratings_per_setup(in_school=in_school)
-    g = sns.barplot(x='setup', y='value', hue='category', data=data, hue_order=['easy', 'appropriate', 'difficult'])
+    g = sns.barplot(x='setup', y='value', hue='category', data=data, hue_order=sorted(data['category'].unique()))
     g.set_xticklabels(g.get_xticklabels(), rotation=30)
     g.get_legend().set_title(None)
     g.get_legend().set_frame_on(True)

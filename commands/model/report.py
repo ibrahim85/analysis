@@ -38,6 +38,7 @@ def brier_graphs(model):
 def time_callibration_graph(model):
     time_calibration = test_time_calibration(model)
     plt.bar(list(range(len(time_calibration))), time_calibration)
+    plt.ylim(0, 0.15)
     output.savefig('time_calibration_{}'.format(model.__class__.__name__))
 
 

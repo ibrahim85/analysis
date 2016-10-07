@@ -1,6 +1,6 @@
 from .raw import load_term_id_mapping
 from fma.ontology import load_ontology, extract_relation_triples
-from spiderpig import msg
+from spiderpig import msg, spiderpig
 import json
 import pandas
 
@@ -59,17 +59,27 @@ def load_active_ontology():
     }
 
 
-def execute(output_dir='output', stats=False, filter_type='app', relations=None, dry=False, file_format='json'):
+def load_filtered_ontology(filter_type='app'):
     if filter_type == 'none':
-        ontology = load_ontology(taids_only=False)
+        return load_ontology(taids_only=False)
     elif filter_type == 'taid':
-        ontology = load_ontology(taids_only=True)
-    else:
-        ontology = load_active_ontology()
+        return load_ontology(taids_only=True)
+    return load_active_ontology()
+
+
+@spiderpig()
+def load_ontology_as_dataframe(filter_type='app'):
+    ontology = load_filtered_ontology(filter_type)
     mapping = load_term_id_mapping()[['anatom_id', 'fma_id']].rename(columns={'anatom_id': 'anatomid', 'fma_id': 'fmaid'})
     extracted = extract_relation_triples(ontology)
     extracted = pandas.merge(extracted, mapping.rename(columns={'anatomid': 'anatomid_from', 'fmaid': 'fmaid_from'}), how='left', on='fmaid_from')
     extracted = pandas.merge(extracted, mapping.rename(columns={'anatomid': 'anatomid_to', 'fmaid': 'fmaid_to'}), how='left', on='fmaid_to')
+    return extracted
+
+
+def execute(output_dir='output', stats=False, filter_type='app', relations=None, dry=False, file_format='json'):
+    ontology = load_filtered_ontology(filter_type)
+    extracted = load_ontology_as_dataframe(filter_type)
     if stats:
         print('AVAILABLE RELATION TYPES SORTED BY USAGE')
         stats_data = extracted.groupby('relation').apply(len).sort_values(ascending=False)

@@ -1,9 +1,11 @@
 from .raw import load_search_results
 from commands.all.raw import load_answers, load_flashcards
-from spiderpig import spiderpig
+from pylab import rcParams
 from radiopaedia.graph import load_stats
-import pandas
+from spiderpig import spiderpig
+import matplotlib.pyplot as plt
 import output
+import pandas
 import seaborn as sns
 
 
@@ -33,27 +35,29 @@ def load_radiopaedia_terms():
     return result
 
 
-def execute(bins=10):
+def execute(bins=10, ylim=False):
     data = pandas.merge(load_terms(), load_search_results().rename(columns={'identifier': 'term_id'}), on=['term_id'], how='inner')
     data = data[data['term_name'].apply(lambda x: len(x.split(';')[0]) > 5)]
     data = data[data['term_id'].apply(lambda x: x.startswith('A'))]
     data = pandas.merge(data, load_radiopaedia_terms(), on=['term_id', 'term_name'], how='inner')
-    load_radiopaedia_terms()
-    g = sns.pairplot(data, vars=['search_results_log', 'pagerank', 'difficulty_prob'])
-    print('TOP PAGERANK')
-    print(data.sort_values(by='pagerank', ascending=False)[['term_name', 'difficulty_prob']].tail(n=20))
-    print()
-    print('BOTTOM PAGERANK')
-    print(data.sort_values(by='pagerank')[['term_name', 'difficulty_prob']].tail(n=20))
-    print()
-    for ax in g.axes.flat:
-        if ax.get_xlabel() in ['difficulty_prob', 'pagerank']:
-            ax.set_xlim(0, 1)
-        if ax.get_ylabel() in ['difficulty_prob', 'pagerank']:
-            ax.set_ylim(0, 1)
-        if min(ax.get_xticks()) < 0:
-            ax.set_xlim(0, max(ax.get_xticks()))
-        if min(ax.get_yticks()) < 0:
-            ax.set_ylim(0, max(ax.get_yticks()))
-
-    output.savefig('importance', tight_layout=False)
+    # load_radiopaedia_terms()
+    # g = sns.pairplot(data, vars=['search_results_log', 'pagerank', 'difficulty_prob'])
+    # for ax in g.axes.flat:
+        # if ax.get_xlabel() in ['difficulty_prob', 'pagerank']:
+            # ax.set_xlim(0, 1)
+        # if ax.get_ylabel() in ['difficulty_prob', 'pagerank']:
+            # ax.set_ylim(0, 1)
+        # if min(ax.get_xticks()) < 0:
+            # ax.set_xlim(0, max(ax.get_xticks()))
+        # if min(ax.get_yticks()) < 0:
+            # ax.set_ylim(0, max(ax.get_yticks()))
+    # output.savefig('importance_pair', tight_layout=False)
+    rcParams['figure.figsize'] = 30, 20
+    for term_name, difficulty_prob, pagerank in data[['term_name', 'difficulty_prob', 'pagerank']].values:
+        plt.plot(1 - difficulty_prob, pagerank, color='red', marker='s', markersize=10)
+        plt.text(1 - difficulty_prob, pagerank, term_name)
+        if ylim:
+            plt.ylim(0, 0.5)
+        plt.xlabel('Predicted error rate')
+        plt.ylabel('Pagerank')
+    output.savefig('importance_pagerank')

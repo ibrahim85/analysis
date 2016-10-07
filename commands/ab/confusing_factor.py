@@ -10,23 +10,16 @@ import seaborn as sns
 @spiderpig()
 def load_confusing_factor():
     all_answers = load_answers()
-    items = set(all_answers['item_asked_id'].unique())
     result = []
     for experiment_setup_name, answers in all_answers.groupby('experiment_setup_name'):
-        cf = {(x, y): 0 for x in items for y in items if x != y}
-        counts = defaultdict(lambda: 0)
-        for item_asked, item_answered in answers[(answers['guess'] == 0) & (answers['item_answered_id'].notnull()) & (answers['item_asked_id'] != answers['item_answered_id'])][['item_asked_id', 'item_answered_id']].values:
-            if (item_asked, item_answered) not in cf:
-                continue
-            cf[item_asked, item_answered] += 1
+        cf_answers = answers[(answers['guess'] == 0) & (answers['item_answered_id'].notnull()) & (answers['item_asked_id'] != answers['item_answered_id'])][['item_asked_id', 'item_answered_id']]
+        cf = cf_answers.groupby(['item_answered_id', 'item_asked_id']).apply(len).to_dict()
         for (item_asked, item_answered), val in cf.items():
             result.append({
                 'item': item_asked,
                 'other': item_answered,
                 'value': val,
                 'experiment_setup_name': experiment_setup_name,
-                'size': counts[item_asked, item_answered],
-                'size_all': [v for (asked, answered), v in counts.items() if asked == item_asked],
             })
     return pandas.DataFrame(result)
 
@@ -50,7 +43,7 @@ def load_distractor_factor():
                 'value': val / counts[item_asked, item_answered] if val > 0 else 0,
                 'experiment_setup_name': experiment_setup_name,
                 'size': counts[item_asked, item_answered],
-                'size_all': [v for (asked, answered), v in counts.items() if asked == item_asked],
+                'size_all': sum([v for (asked, answered), v in counts.items() if asked == item_asked]),
             })
     return pandas.DataFrame(result)
 

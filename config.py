@@ -96,4 +96,11 @@ def get_argument_parser():
         default=None,
         dest='flashcards_file'
     )
+    p.add_argument(
+        '--group-setups',
+        dest='group_setups',
+        action='store',
+        default=None,
+        type=int
+    )
     return p

@@ -81,9 +81,11 @@ def plot_global_learning_curve(length, user_length, context_answer_limit, with_c
     plt.ylabel('Error rate')
     plt.subplot(212) if vertical else plt.subplot(122)
     plt.title('Fitted power law')
+    plot_learning_curve(data[(data['variable'] == 'fit') & balance_filter], with_confidence=with_confidence)
     if vertical:
         plt.ylabel('Error rate')
-    plot_learning_curve(data[(data['variable'] == 'fit') & balance_filter], with_confidence=with_confidence)
+    else:
+        plt.gca().axes.get_yaxis().set_ticks([])
     output.savefig('learning_curve')
 
 

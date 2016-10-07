@@ -21,16 +21,16 @@ def survival_curve(length):
     return result
 
 
-def plot_survival_curve(length, with_confidence):
+def plot_survival_curve(length, with_confidence, legend=False):
     for i, (group_name, data) in enumerate(sorted(survival_curve(length=length).items())):
         output.plot_line(data, color=output.palette()[i], with_confidence=with_confidence, label=group_name)
-    plt.legend(loc=3, frameon=True)
+    if legend:
+        plt.legend(loc=1)
     plt.xlabel('Number of seconds')
     plt.ylabel('Proportion of learners')
     plt.ylim(0, 1)
-    output.savefig(filename='survival_curve_time')
 
 
 def execute(length=60, with_confidence=False):
-    print(load_user_time(groupby=['experiment_setup_name']).reset_index()[0].max())
-    plot_survival_curve(length, with_confidence)
+    plot_survival_curve(length, with_confidence, legend=True)
+    output.savefig(filename='survival_curve_time')

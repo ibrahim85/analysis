@@ -61,6 +61,6 @@ def savefig(filename, output_dir, figure_extension, tight_layout=True):
     if tight_layout:
         plt.tight_layout()
     filename = '{}/{}.{}'.format(output_dir, filename, figure_extension)
-    plt.savefig(filename)
+    plt.savefig(filename, bbox_inches='tight')
     plt.close()
     msg.success(filename)

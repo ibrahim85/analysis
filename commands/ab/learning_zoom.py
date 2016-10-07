@@ -1,19 +1,10 @@
 from .data import groupped_reference_series, fit_learning_curve
-from .raw import load_context_size, load_reference_answers, load_context_difficulty
+from .raw import load_contexts, load_reference_answers
 from pylab import rcParams
 from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import output
 import pandas
-
-
-@spiderpig()
-def load_contexts():
-    contexts = pandas.merge(load_context_size(), load_context_difficulty(), on=['context_name', 'term_type'], how='inner')
-    contexts = contexts[contexts['context_size'] > 5]
-    contexts['context_size_label'] = pandas.qcut(contexts['context_size'], [0, 0.25, 0.75, 1], labels=['small', 'medium', 'big'])
-    contexts['context_difficulty_label'] = pandas.qcut(contexts['context_difficulty'], [0, 0.25, 0.75, 1], labels=['too easy', 'medium', 'difficult'])
-    return contexts
 
 
 @spiderpig()
@@ -72,7 +63,14 @@ def plot_global_learning_curve(length, zoom_column, user_length, with_confidence
 
 
 def execute(length=10, user_length=None, with_confidence=False, vertical=False, bootstrap_samples=100):
-    print(load_contexts())
+    print('------------------------------------------------------------------------------------------')
+    print('SIZE')
+    print('------------------------------------------------------------------------------------------')
+    print(load_contexts().sort_values(by=['context_size', 'context_name'])[['context_name', 'term_type', 'context_size_label']])
+    print('------------------------------------------------------------------------------------------')
+    print('DIFFICULTY')
+    print('------------------------------------------------------------------------------------------')
+    print(load_contexts().sort_values(by=['context_difficulty', 'context_name'])[['context_name', 'term_type', 'context_difficulty_label']])
     for zoom_column in ['context_size_label', 'context_difficulty_label']:
         plot_global_learning_curve(
             length=length, zoom_column=zoom_column, user_length=user_length,
