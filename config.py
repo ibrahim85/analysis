@@ -41,6 +41,7 @@ def get_argument_parser():
     p.add_argument(
         '-p',
         '--palette',
+        dest='palette_name',
         action='store',
         default=None
     )

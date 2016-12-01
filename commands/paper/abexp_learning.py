@@ -22,8 +22,11 @@ def learning_curve_in_one():
 def plot_learning_curve_in_one(vertical=False):
     rcParams['figure.figsize'] = 7.5, 4
     data = learning_curve_in_one()
+    slope = data['value'][data['variable'] == 'slope'].values[0]
+    intercept = data['value'][(data['variable'] == 'fit') & (data['attempt'] == 0)].values[0]
     fit = data[data['variable'] == 'fit']
     plt.plot(fit['attempt'] + 1, 100 * fit['value'], '--', color='black', label='Fitted power law')
+    plt.text(2, 17, r'$y = {0:.2f}'.format(intercept) + ' \cdot x^{{-{0:.2f}}}$'.format(slope), size='x-large')
     raw = data[data['variable'] == 'raw']
     raw['experiment_setup_name'] = raw['experiment_setup_name'].apply(lambda x: 'Coarse data')
     plot_learning_curve(raw, with_confidence=True, legend=True)

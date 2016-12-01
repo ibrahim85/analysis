@@ -7,6 +7,9 @@ import output
 from pylab import rcParams
 
 
+MARKERS = "dos^" * 10
+
+
 @spiderpig()
 def load_survival_curve_answers(length, zoom_column):
     data = pandas.merge(load_answers(), load_contexts(), on=['context_name', 'term_type'], how='inner')
@@ -62,9 +65,14 @@ def load_survival_curve_time(length, zoom_column):
     return pandas.DataFrame(result)
 
 
-def plot_survival_curve(survival_data, legend=True, with_confidence=False):
+def plot_survival_curve(survival_data, legend=True, with_confidence=False, markers=False, colorshift=1):
     for i, (setup, setup_data) in enumerate(survival_data.sort_values(by='attempt').groupby('experiment_setup_name')):
-        plt.plot(setup_data['attempt'] + 1, setup_data['value'].apply(lambda x: x * 100), label=setup, color=output.palette()[i])
+        kwargs = {}
+        if markers:
+            kwargs['marker'] = MARKERS[i]
+            kwargs['markersize'] = 10
+            kwargs['markevery'] = 5
+        plt.plot(setup_data['attempt'] + 1, setup_data['value'].apply(lambda x: x * 100), label=setup, color=output.palette()[i * colorshift], **kwargs)
         if with_confidence:
             plt.fill_between(
                 setup_data['attempt'] + 1,

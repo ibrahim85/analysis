@@ -202,5 +202,6 @@ def load_ratings(data_dir='data'):
         8: 'much harder',
     }
     ratings['label'] = ratings['value'].apply(lambda v: '{} - {}'.format(v, labels[v]))
-    users = load_answers()['user_id'].unique()
-    return ratings[ratings['user_id'].isin(users)]
+    answers = load_answers()
+    users = answers['user_id'].unique()
+    return ratings[ratings['user_id'].isin(users) & (ratings['inserted'] <= answers['time'].max())]

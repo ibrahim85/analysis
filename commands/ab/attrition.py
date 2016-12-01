@@ -33,16 +33,18 @@ def attrition_bias(length, user_length, context_answer_limit):
 def plot_attrition_bias(length, user_length, context_answer_limit, with_confidence):
     data = attrition_bias(length, user_length, context_answer_limit)
     MARKERS = "dos^" * 10
+    LINES = ['-', '--', '..', '.-'] * 10
     for i, (setup, setup_data) in enumerate(data.groupby('experiment_setup_name')):
-        plt.plot(setup_data['length'], setup_data['value'].apply(lambda x: x * 100), label=setup, color=output.palette()[i], marker=MARKERS[i], markersize=10)
+        color = output.palette()[3 * i]
+        plt.plot(setup_data['length'], setup_data['value'].apply(lambda x: x * 100), label=setup, color=color, marker=MARKERS[i], markersize=10, linestyle=LINES[i])
         if with_confidence:
             plt.fill_between(
                 setup_data['length'],
                 setup_data['confidence_min'.format(setup)].apply(lambda x: x * 100),
                 setup_data['confidence_max'.format(setup)].apply(lambda x: x * 100),
-                color=output.palette()[i], alpha=0.35
+                color=color, alpha=0.35
             )
-    plt.legend(loc=0)
+    plt.legend(loc='upper left', ncol=2)
     plt.xlabel('Minimal number of reference attempts')
     plt.ylabel('Error rate (%)')
     output.savefig('attrition_bias')

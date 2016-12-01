@@ -74,7 +74,7 @@ def plot_error_by_attempt(length, with_confidence=False, legend=True):
                     setup_data['attempt'],
                     setup_data['confidence_min'],
                     setup_data['confidence_max'],
-                    color=output.palette()[j], alpha=0.35
+                    color=output.palette()[j], alpha=0.5
                 )
         # plt.ylim(0, 70)
         plt.xlim(0, data['attempt'].max())

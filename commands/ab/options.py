@@ -120,6 +120,7 @@ def plot_distractors(number_of_distractors=10):
     data['confusing_rank'] += 1
     sns.barplot(x='confusing_rank', y='value', hue='Condition', data=data.rename(columns={'experiment_setup_name': 'Condition'}), ci=None)
     plt.ylabel('Average usage (%)')
+    plt.legend(title=None)
     plt.xlabel('Top {} most competitive distractors'.format(number_of_distractors))
     output.savefig('distractors_usage')
 

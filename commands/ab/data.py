@@ -114,7 +114,7 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
 
         for group_name, group_data in to_fit.items():
             references_by_attempt = map(lambda references: [r for r in references if r is not None], zip(*group_data))
-            learning_curve = [(numpy.mean(xs), len(xs)) for xs in references_by_attempt]
+            learning_curve = [(numpy.mean(xs), len(xs)) for xs in references_by_attempt if len(xs) > 0]
             for i, (_, size) in enumerate(learning_curve):
                 confidence_size[group_name][i] = size
             confidence_quit_score[group_name].append(numpy.mean([[r for r in s if r is not None][-1] for s in group_data]))

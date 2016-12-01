@@ -54,13 +54,13 @@ def compute_survival_curve_time(user_times, length):
 @spiderpig()
 def load_survival_curve_answers(length):
     user_answers = load_user_answers()
-    return compute_survival_curve_answers(user_answers)
+    return compute_survival_curve_answers(user_answers, length)
 
 
 @spiderpig()
 def load_survival_curve_time(length):
     user_times = load_user_time()
-    return compute_survival_curve_time(user_times)
+    return compute_survival_curve_time(user_times, length)
 
 
 def plot_survival_curve_overview(survival_data):
@@ -81,22 +81,21 @@ def plot_overview():
         plt.plot(attempt, 100 * data['value'][data['attempt'] == attempt].values[0], '.', color='black', markersize=20)
         plt.text(attempt + horizontal_shift, vertical_shift + 100 * data['value'][data['attempt'] == attempt].values[0], '{} ({}%)'.format(text, int(round(data['value'][data['attempt'] == attempt].values[0] * 100))))
 
-    rcParams['figure.figsize'] = 15, 4
-    plt.subplot(121)
+    rcParams['figure.figsize'] = 7.5, 8
+    plt.subplot(211)
     answers = load_survival_curve_answers(150)
     plot_survival_curve_overview(answers)
     _highlight(answers, 10, 'short-term')
     _highlight(answers, 100, 'long-term')
-    plt.ylabel('Proportion of learners')
+    plt.ylabel('Percentage of learners')
     plt.xlabel('Attempts')
-    plt.subplot(122)
+    plt.subplot(212)
     time = load_survival_curve_time(900)
     plot_survival_curve_overview(time)
     _highlight(time, 60, 'short-term', horizontal_shift=15, vertical_shift=2)
     _highlight(time, 600, 'long-term', horizontal_shift=15, vertical_shift=2)
+    plt.ylabel('Percentage of learners')
     plt.xlabel('Seconds')
-    plt.gca().axes.get_yaxis().set_ticks([])
-    plt.gca().yaxis.set_major_formatter(plt.NullFormatter())
     output.savefig('abexp_survival_overview')
 
 
@@ -123,14 +122,14 @@ def plot_difficulty_zoom():
     plt.subplot(211)
     plt.title('Top 25% easiest contexts')
     easy_data = answers[answers['zoom_column_value'] =='too easy']
-    plot_survival_curve_zoom(easy_data, with_confidence=True, legend=True)
+    plot_survival_curve_zoom(easy_data, with_confidence=True, legend=True, colorshift=3)
     _swap(easy_data)
     plt.ylabel('Proportion of learners')
 
     plt.subplot(212)
     plt.title('Top 25% most difficult contexts')
     difficulty_data = answers[answers['zoom_column_value'] =='difficult']
-    plot_survival_curve_zoom(difficulty_data, with_confidence=True, legend=False)
+    plot_survival_curve_zoom(difficulty_data, with_confidence=True, legend=False, colorshift=3)
     plt.ylabel('Proportion of learners')
     plt.xlabel('Attempts')
 
