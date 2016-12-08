@@ -35,7 +35,7 @@ def plot_scatter(ylim, n):
     plt.xlabel('Average errror rate on the first question (%)')
     if ylim:
         plt.ylim(0, ylim)
-    plt.ylabel('Size')
+    plt.ylabel('Number of items available in the context')
     plt.legend(loc='center left', fontsize='xx-small', bbox_to_anchor=(0.95, 0.5))
 
 
