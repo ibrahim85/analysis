@@ -61,6 +61,7 @@ def load_distractors_usage(length=None, by_attempt=True):
 
 def plot_number_of_options_by_attempt(length):
     data = load_options_by_attempt()
+    data['value'] = data['value'].apply(lambda x: x * 100)
     data = data[(data['attempt'] < length)]
     max_options = data['options'][data['options'] != 0].max()
     data['options'] = data['options'].apply(lambda x: max_options + 1 if x == 0 else x)
@@ -76,7 +77,7 @@ def plot_number_of_options_by_attempt(length):
         plt.subplot(gs[j])
         to_plot = setup_data.pivot_table(columns='options', index='attempt', values='value', dropna=False, fill_value=0)
         plt.title(setup)
-        sns.heatmap(to_plot, annot=False, cbar=(j == cols - 1), linewidths=0.1)
+        sns.heatmap(to_plot, annot=False, cbar=(j == cols - 1), linewidths=0.1, cbar_kws={'format': '%.0f%%'})
         plt.xticks(plt.xticks()[0], [lab.get_text() if int(lab.get_text()) <= max_options else 'O' for lab in plt.xticks()[1]])
         if j != 0:
             plt.gca().axes.get_yaxis().set_ticks([])
