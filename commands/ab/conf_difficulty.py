@@ -1,4 +1,4 @@
-from .raw import load_answers
+from .raw import load_answers, load_conf_difficulty_by_attempt
 from metric import binomial_confidence_mean
 from pylab import rcParams
 from spiderpig import spiderpig
@@ -37,27 +37,6 @@ def load_choice_by_success():
         return group
     data = data.groupby(['experiment_setup_name', 'user_id', 'context_name', 'term_type']).apply(_apply_serie_next).reset_index()
     return data.drop('level_5', 1)
-
-
-@spiderpig()
-def load_conf_difficulty_by_attempt(filter_passive_users=False):
-    answers = load_answers()
-    answers['error_rate'] = answers['target_success'].apply(lambda v: int(_round((1 - v) * 100)))
-    if filter_passive_users:
-        passivity = answers.groupby('user_id').apply(lambda g: len(g['error_rate'].unique()) == 1).reset_index().rename(columns={0: 'passive'})
-        passive_users = passivity[passivity['passive']]['user_id'].unique()
-        answers = answers[~answers['user_id'].isin(passive_users)]
-    answers['attempt'] = answers.groupby([
-        'experiment_setup_name',
-        'user_id',
-        'context_name',
-        'term_type',
-    ]).cumcount()
-
-    def _apply(group):
-        total = len(group)
-        return group.groupby('error_rate').apply(lambda g: len(g) / total).reset_index().rename(columns={0: 'value'})
-    return answers.groupby(['experiment_setup_name', 'attempt']).apply(_apply).reset_index()
 
 
 def plot_choice_by_success():
@@ -148,7 +127,3 @@ def plot_conf_difficulty_by_attempt(length, filter_passive_users):
 def execute(length=50):
     plot_conf_difficulty_by_attempt(length, filter_passive_users=False)
     plot_choice_by_success()
-
-
-def _round(x, base=5):
-    return int(base * round(x / base))

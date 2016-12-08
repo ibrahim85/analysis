@@ -205,3 +205,50 @@ def load_ratings(data_dir='data'):
     answers = load_answers()
     users = answers['user_id'].unique()
     return ratings[ratings['user_id'].isin(users) & (ratings['inserted'] <= answers['time'].max())]
+
+
+@spiderpig()
+def load_conf_difficulty_by_attempt(filter_passive_users=False, groupby=None):
+    answers = load_answers()
+    answers['error_rate'] = answers['target_success'].apply(lambda v: int(_round((1 - v) * 100)))
+    if filter_passive_users:
+        passivity = answers.groupby('user_id').apply(lambda g: len(g['error_rate'].unique()) == 1).reset_index().rename(columns={0: 'passive'})
+        passive_users = passivity[passivity['passive']]['user_id'].unique()
+        answers = answers[~answers['user_id'].isin(passive_users)]
+    answers['attempt'] = answers.groupby([
+        'experiment_setup_name',
+        'user_id',
+        'context_name',
+        'term_type',
+    ]).cumcount()
+
+    def _apply(group):
+        total = len(group)
+        return group.groupby('error_rate').apply(lambda g: len(g) / total).reset_index().rename(columns={0: 'value'})
+    return answers.groupby(['experiment_setup_name', 'attempt'] + ([] if groupby is None else groupby)).apply(_apply).reset_index()
+
+
+@spiderpig()
+def load_ratings_with_contexts():
+    ratings = load_ratings()
+    answers = load_answers().drop_duplicates(['user_id', 'practice_set_id']).sort_values(by='time')
+    result = []
+    for user, inserted, value, label in ratings[['user_id', 'inserted', 'value', 'label']].values:
+        av_answers = answers[(answers['user_id'] == user) & (answers['time'] <= inserted)]
+        if len(av_answers) == 0:
+            print('INVALID TIME')
+            continue
+        context_name, term_type = av_answers[['context_name', 'term_type']].values[-1]
+        result.append({
+            'user': user,
+            'time': inserted,
+            'value': value,
+            'label': label,
+            'context_name': context_name,
+            'term_type': term_type
+        })
+    return pandas.DataFrame(result)
+
+
+def _round(x, base=5):
+    return int(base * round(x / base))
