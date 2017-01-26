@@ -67,7 +67,7 @@ def plot_number_of_options_by_attempt(length):
     data['options'] = data['options'].apply(lambda x: max_options + 1 if x == 0 else x)
     cols = len(data['experiment_setup_name'].unique())
     gs = gridspec.GridSpec(1, cols, width_ratios=[3.5] * (cols - 1) + [4])
-    rcParams['figure.figsize'] = cols * 1.5, int(5 * length / 50)
+    rcParams['figure.figsize'] = cols * 2, int(5 * length / 50)
     rcParams['axes.linewidth'] = 1
     for j, (setup, setup_data) in enumerate(data.groupby('experiment_setup_name')):
         for opt in range(2, max_options + 1):

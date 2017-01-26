@@ -127,13 +127,16 @@ def load_and_merge(data_dir='data', language='en', answer_limit=1, nrows=None, o
         'id': 'flashcard',
         'identifier': 'flashcard_id',
     }, inplace=True)
+    flashcards_flashcard.drop('additional_info', axis=1, inplace=True)
     models_answer.rename(columns={
         'context': 'practice_filter',
     }, inplace=True)
     models_answer.drop('item', axis=1, inplace=True)
     flashcards_flashcard.drop(['active', 'description', 'lang'], axis=1, inplace=True)
 
-    if flashcards_term['term_type'].isnull().sum() == len(flashcards_term):
+    if 'term_type' not in flashcards_term:
+        flashcards_term['term_type'] = flashcards_term['term_name'].apply(lambda row: '')
+    elif flashcards_term['term_type'].isnull().sum() == len(flashcards_term):
         flashcards_term['term_type'] = flashcards_term['term_type'].apply(lambda row: '')
 
     flashcards_flashcard = pandas.merge(flashcards_flashcard, flashcards_term[['term', 'term_name', 'term_type', 'term_id']], on='term', how='inner')

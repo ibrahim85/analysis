@@ -5,6 +5,19 @@ def get_argument_parser():
     p = spiderpig.config.get_argument_parser()
 
     p.add_argument(
+        '--school',
+        action='store',
+        dest='school',
+        default=None,
+        type=str2bool
+    )
+    p.add_argument(
+        '--top-contexts',
+        dest='top_contexts',
+        default=None
+    )
+
+    p.add_argument(
         "-d",
         "--data",
         action="store",
@@ -105,3 +118,7 @@ def get_argument_parser():
         type=int
     )
     return p
+
+
+def str2bool(x):
+    return True if x.lower() == 'true' else False

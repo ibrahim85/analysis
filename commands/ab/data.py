@@ -184,6 +184,9 @@ def fit_learning_curve(group_series, length=10, fix_beginning=True, balance=Fals
 
 def _bootstrap_group_series(group_series, fun, bootstrap_samples=100):
     group_series = {name: numpy.array(values) for name, values in group_series.items()}
+    for group_name, group_values in group_series.items():
+        if len(group_values) == 0:
+            raise Exception('There are no data for group {}.'.format(group_name))
     for _ in progress.bar(range(bootstrap_samples)):
         fun({
             group_name: group_values[randint(group_values.shape[0], size=len(group_values))]

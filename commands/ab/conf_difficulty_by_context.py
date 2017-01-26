@@ -8,11 +8,11 @@ from spiderpig import spiderpig
 
 
 MAPPING = {
-    4: -2,
-    5: -1,
+    4: 2,
+    5: 1,
     6: 0,
-    7: 1,
-    8: 2,
+    7: -1,
+    8: -2,
 }
 
 
@@ -35,9 +35,10 @@ def plot_average_difficulty_by_attempt(n=12, length=10):
     rcParams['figure.figsize'] = 15, 10
     data = load_data(n, length)
     data = data.groupby(['context', 'order', 'school']).apply(lambda g: g['value'].mean()).reset_index().rename(columns={0: 'value'})
-    print(data)
     g = sns.FacetGrid(data, col="context", col_wrap=4, hue='school', aspect=1.5)
-    g.map(plt.plot, 'order', 'value').set_titles('{col_name}')
+    bp = g.map(plt.plot, 'order', 'value').set_titles('{col_name}')
+    for ax in bp.axes:
+        ax.yaxis.grid(True)
     g.add_legend()
 
     output.savefig('average_ratings_by_attempt', tight_layout=False)

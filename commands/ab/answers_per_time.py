@@ -9,8 +9,9 @@ import seaborn as sns
 def execute(school_threshold=10, time_unit='hour'):
     rcParams['figure.figsize'] = 7.5, 4
     answers = load_answers()
-    answers = pandas.merge(load_answers(), load_school_usage(school_threshold=school_threshold).reset_index().rename(columns={'ip_address': 'school'}), on='user_id', how='inner')
+    # answers = pandas.merge(load_answers(), load_school_usage(school_threshold=school_threshold).reset_index().rename(columns={'ip_address': 'school'}), on='user_id', how='inner')
     answers_per_time = answers.set_index('time').groupby(lambda x: getattr(x, time_unit)).apply(len).reset_index().rename(columns={'index': 'Time', 0: 'Answers'})
+    print(answers)
     in_school = answers[answers['school']].copy().set_index('time').groupby(lambda x: getattr(x, time_unit)).apply(len).reset_index().rename(columns={'index': 'Time', 0: 'Answers'})
     total_answers = answers_per_time['Answers'].sum()
     answers_per_time['Answers'] = answers_per_time['Answers'].apply(lambda a: 100 * a / total_answers)

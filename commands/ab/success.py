@@ -48,7 +48,7 @@ def error_rate_histogram():
         for b, v in zip(hist['bins'], hist['hist']):
             result.append({
                 'setup': setup,
-                'value': v,
+                'value': 100 * v / len(users),
                 'bin_min': numpy.round(b, 1),
                 'bin_max': numpy.round(b + 0.1, 1),
             })
@@ -61,7 +61,7 @@ def plot_error_rate_histogram():
     g.get_legend().set_frame_on(True)
     g.yaxis.grid(True)
     plt.xlabel('Success')
-    plt.ylabel('Number of learners')
+    plt.ylabel('Learners (%)')
 
 
 def plot_error_by_attempt(length, with_confidence=False, legend=True):

@@ -5,6 +5,7 @@ from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import output
 import pandas
+import numpy
 
 
 @spiderpig()
@@ -62,6 +63,34 @@ def plot_global_learning_curve(length, zoom_column, user_length, with_confidence
     output.savefig('learning_curve_zoom_{}'.format(zoom_column))
 
 
+def plot_global_learning_slope(length, zoom_column, user_length, with_confidence, bootstrap_samples, vertical):
+    rcParams['figure.figsize'] = 15, 8
+    data = global_learning_curve(length, zoom_column=zoom_column, user_length=user_length, bootstrap_samples=bootstrap_samples)
+    for i, (experiment_setup_name, data) in enumerate(data[data['variable'] == 'slope'].groupby('experiment_setup_name')):
+        data = data.sort_values(by=zoom_column)
+        plt.bar(
+            numpy.arange(len(data)) + i * 0.3,
+            data['value'], 0.3,
+            color=output.palette()[i],
+            label=experiment_setup_name,
+            yerr=[data['value'] - data['confidence_min'], data['confidence_max'] - data['value']],
+            error_kw={'ecolor': 'black'},
+        )
+        plt.xticks(
+            numpy.arange(len(data)) + 0.3,
+            data[zoom_column]
+        )
+        plt.yticks(
+            numpy.linspace(min(plt.yticks()[0]), max(plt.yticks()[0]), 21),
+            [plt.yticks()[0][0]] + [''] * 19 + [plt.yticks()[0][-1]]
+        )
+    plt.legend(frameon=True, loc=0)
+    plt.xlabel(zoom_column)
+    plt.ylabel('k')
+    plt.gca().yaxis.grid(True)
+    output.savefig('learning_slope_zoom_{}'.format(zoom_column))
+
+
 def execute(length=10, user_length=None, with_confidence=False, vertical=False, bootstrap_samples=100):
     print('------------------------------------------------------------------------------------------')
     print('SIZE')
@@ -73,6 +102,11 @@ def execute(length=10, user_length=None, with_confidence=False, vertical=False, 
     print(load_contexts().sort_values(by=['context_difficulty', 'context_name'])[['context_name', 'term_type', 'context_difficulty_label']])
     for zoom_column in ['context_size_label', 'context_difficulty_label']:
         plot_global_learning_curve(
+            length=length, zoom_column=zoom_column, user_length=user_length,
+            with_confidence=with_confidence, bootstrap_samples=bootstrap_samples,
+            vertical=vertical
+        )
+        plot_global_learning_slope(
             length=length, zoom_column=zoom_column, user_length=user_length,
             with_confidence=with_confidence, bootstrap_samples=bootstrap_samples,
             vertical=vertical

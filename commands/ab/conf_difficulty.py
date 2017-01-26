@@ -1,7 +1,6 @@
-from .raw import load_answers, load_conf_difficulty_by_attempt
+from .raw import load_conf_difficulty_by_attempt, load_ratings_with_contexts, load_school_usage
 from metric import binomial_confidence_mean
 from pylab import rcParams
-from spiderpig import spiderpig
 import matplotlib.pyplot as plt
 import numpy
 import output
@@ -9,92 +8,59 @@ import pandas
 import seaborn as sns
 
 
-@spiderpig()
-def load_choice_by_success():
-    answers = load_answers()
-    answers['error_rate'] = answers['target_success'].apply(lambda v: int(_round((1 - v) * 100)))
-    answers['attempt'] = answers.groupby([
-        'experiment_setup_name',
-        'user_id',
-        'context_name',
-        'term_type',
-    ]).cumcount()
-    answers = answers.sort_values(by=['attempt', 'id'])
-    answers['serie'] = answers['attempt'].apply(lambda a: a // 10)
-
-    def _apply_serie_stats(group):
-        return pandas.DataFrame([{
-            'real_error_rate': int(round(100 * (group['item_asked_id'] != group['item_answered_id']).mean())),
-            'target_error_rate': int(group['error_rate'].mean()),
-            'valid': len(group) == 10,
-        }])
-    data = answers.groupby(['experiment_setup_name', 'user_id', 'practice_set_id', 'context_name', 'term_type']).apply(_apply_serie_stats).reset_index()
-    data = data[data['valid']]
-    data.drop('valid', 1)
-
-    def _apply_serie_next(group):
-        group['next_target_error_rate'] = group['target_error_rate'].shift(-1)
-        return group
-    data = data.groupby(['experiment_setup_name', 'user_id', 'context_name', 'term_type']).apply(_apply_serie_next).reset_index()
-    return data.drop('level_5', 1)
-
-
-def plot_choice_by_success():
-    data = load_choice_by_success()
-    data['choice'] = (data['next_target_error_rate'] - data['target_error_rate'])
-    data[data['experiment_setup_name'] == 'adjustment']
-    data = data[~data['choice'].isnull()].sort_values(by=['choice'])
-    data = data[data['choice'].isin({-20, -10, 0, 10, 20})]
-    mapping = {
-        -20: '- 20',
-        -10: '- 10',
-        0: '-',
-        10: '+ 10',
-        20: '+ 20',
-    }
-    data['choice'] = data['choice'].apply(lambda c: mapping[c])
-    data['changed'] = data['target_error_rate'] != data['next_target_error_rate']
+def plot_label_by_success(setup_name, school, context_name=None, term_type=None, legend=True, linetype='-', show_data_size=True):
+    data = load_ratings_with_contexts()
+    data = data[(data['experiment_setup_name'] == setup_name)]
+    if context_name is not None:
+        data = data[data['context_name'] == context_name]
+    if term_type is not None:
+        data = data[data['term_type'] == term_type]
+    if school is not None:
+        school_usage = load_school_usage().reset_index().rename(columns={'ip_address': 'school', 'user_id': 'user'})
+        data = pandas.merge(data, school_usage, on='user', how='inner')
+        data = data[data['school'] == school]
+    data = data[data['error_rate'].apply(lambda x: x % 10 == 0)]
 
     def _apply(group):
         result = []
-        for choice in group['choice'].unique():
-            mean = binomial_confidence_mean(group['choice'] == choice)
+        for label in group['label'].unique():
+            mean = binomial_confidence_mean(group['label'] == label)
             result.append({
-                'choice': choice,
+                'label': label,
                 'learners': 100 * mean[0],
                 'learners_min': 100 * mean[1][0],
                 'learners_max': 100 * mean[1][1],
             })
         return pandas.DataFrame(result)
-    to_plot = data.groupby(['real_error_rate']).apply(_apply).reset_index()
-    print(to_plot)
-    # to_plot = to_plot[to_plot['choice'] != 0]
-    rcParams['figure.figsize'] = 9, 5
-    plt.ylim(0, 20)
-    # plt.ylim(0, 100)
-    for i, (choice, choice_data) in enumerate(to_plot.groupby('choice')):
+    to_plot = data.groupby(['experiment_setup_name', 'error_rate']).apply(_apply).reset_index()
+    for i, (label, label_data) in enumerate(to_plot.groupby('label')):
         plt.plot(
-            choice_data['real_error_rate'],
-            choice_data['learners'],
-            label=choice,
+            label_data['error_rate'],
+            label_data['learners'],
+            linetype,
+            label=label,
             color=output.palette()[i],
             marker='.',
             markersize=20
         )
         plt.fill_between(
-            choice_data['real_error_rate'],
-            choice_data['learners_min'],
-            choice_data['learners_max'],
+            label_data['error_rate'],
+            label_data['learners_min'],
+            label_data['learners_max'],
             color=output.palette()[i], alpha=0.35
         )
-    plt.legend(ncol=5, loc='upper left', frameon=True)
-    plt.ylabel('Choice (%)')
+    if legend:
+        plt.legend(ncol=5, loc='upper left', frameon=True, fontsize='xx-small')
+    plt.ylabel('label (%)')
     plt.xlabel('Real error rate')
-    plt.twinx()
-    size = data.groupby('real_error_rate').apply(len).reset_index().rename(columns={0: 'size'})
-    plt.plot(size['real_error_rate'], size['size'], '.-', color='gray')
-    plt.ylabel('Data size')
-    output.savefig('choice_by_success', tight_layout=False)
+    plt.gca().xaxis.grid(True)
+    plt.gca().yaxis.grid(True)
+    if show_data_size:
+        plt.twinx()
+        size = data.groupby('error_rate').apply(len).reset_index().rename(columns={0: 'size'})
+        plt.plot(size['error_rate'], size['size'], '.-', color='gray')
+        plt.ylabel('Data size')
+    plt.ylim(0, 60)
 
 
 def plot_conf_difficulty_by_attempt(length, filter_passive_users):
@@ -102,8 +68,7 @@ def plot_conf_difficulty_by_attempt(length, filter_passive_users):
     data = data[(data['attempt'] < length)]
     cols = len(data['experiment_setup_name'].unique())
     rcParams['figure.figsize'] = cols * 5, int(4 * length / 50)
-    # vmax = data[data['error_rate'] != 35]['value'].max()
-    vmax = data['value'].max()
+    vmax = data[data['error_rate'] != 35]['value'].max()
     for j, (setup, setup_data) in enumerate(data.groupby('experiment_setup_name')):
         for e in numpy.arange(0, 101, 5):
             if e not in setup_data['error_rate'].unique():
@@ -124,6 +89,28 @@ def plot_conf_difficulty_by_attempt(length, filter_passive_users):
     output.savefig('conf_difficulty_by_attempt')
 
 
-def execute(length=50):
-    plot_conf_difficulty_by_attempt(length, filter_passive_users=False)
-    plot_choice_by_success()
+def execute(length=50, school_diff=False, context_diff=False):
+    if school_diff:
+        rcParams['figure.figsize'] = 15, 7
+        for school in [True, False]:
+            plt.title('in-school' if school else 'out-of-school')
+            for setup_name, linetype in zip(['placebo', 'adjustment'], ['-', '--']):
+                plot_label_by_success(setup_name, school, legend=setup_name == 'placebo', linetype=linetype, show_data_size=False)
+            output.savefig('label_by_success_{}'.format('in_school' if school else 'out_of_school'), tight_layout=False)
+    elif context_diff:
+        rcParams['figure.figsize'] = 24, 35
+        data = load_ratings_with_contexts()
+        top_contexts = [(c, t) for (c, t), _ in list(sorted(data.groupby(['context_name', 'term_type']).apply(len).to_dict().items(), key=lambda x: -x[1]))[:10]]
+        for i, (context_name, term_type) in enumerate(top_contexts):
+            plt.subplot(5, 2, i + 1)
+            plt.title('{}, {}'.format(context_name, term_type))
+            for col, (setup_name, linetype) in enumerate(zip(['placebo', 'adjustment'], ['-', '--'])):
+                plot_label_by_success(setup_name, None, context_name=context_name, term_type=term_type, legend=(i == 0 and linetype == '-'), show_data_size=False, linetype=linetype)
+                plt.ylim(0, plt.ylim()[1])
+        output.savefig('label_by_success', tight_layout=False)
+    else:
+        rcParams['figure.figsize'] = 12, 7
+        for col, (setup_name, linetype) in enumerate(zip(['placebo', 'adjustment'], ['-', '--'])):
+            plot_label_by_success(setup_name, None, legend=(col == 0), show_data_size=False, linetype=linetype)
+        output.savefig('label_by_success', tight_layout=False)
+    # plot_conf_difficulty_by_attempt(length, filter_passive_users=False)

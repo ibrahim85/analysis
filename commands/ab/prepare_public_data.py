@@ -123,7 +123,7 @@ def prepare_public_data(dest):
     answers.to_csv('{}/answers.csv'.format(dest), index=False)
 
     feedback = feedback[feedback['user_id'].isin(answers['user_id'].unique())]
-    feedback.to_csv('{}/feedback.csv'.format(dest), index=False)
+    feedback.to_csv('{}/feedback.csv'.format(dest), index=false)
     with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
         readme_content = f.read()
     with open(os.path.join(dest, 'README.md'), 'w') as f:

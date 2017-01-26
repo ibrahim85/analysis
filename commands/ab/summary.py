@@ -96,8 +96,10 @@ def plot_summary(title=None):
         yerr=[data['value'] - data['confidence_min'], data['confidence_max'] - data['value']],
         error_kw={'ecolor': 'black'},
     )
-    plt.ylim(0.2, 0.5)
+    plt.ylim(0.3, 0.4)
     plt.ylabel('Learning rate', labelpad=-20)
+    ylim = plt.ylim()
+    plt.yticks(numpy.linspace(ylim[0], ylim[1], 15), [ylim[0]] + [''] * 13 + [ylim[1]])
     plt.yticks(
         plt.yticks()[0],
         [plt.yticks()[0][0]] + [''] * (len(plt.yticks()[0]) - 2) + [plt.yticks()[0][-1]]
@@ -108,17 +110,17 @@ def plot_summary(title=None):
         data['experiment_setup_name']
     )
     ylim = plt.ylim()
-    plt.yticks(numpy.linspace(ylim[0], ylim[1], 11), [ylim[0]] + [''] * 9 + [ylim[1]])
+    plt.yticks(numpy.linspace(ylim[0], ylim[1], 15), [ylim[0]] + [''] * 13 + [ylim[1]])
 
     # short-term
     plt.subplot(312)
     plt.title('(B) Short-term survival')
-    _survival(survival, 0, 10, '10 ans.')
-    _survival(survival_time, 1, 60, '1 min.')
-    plt.ylim(75, 90)
+    _survival(survival, 0, 20, '20 ans.')
+    _survival(survival_time, 1, 120, '2 min.')
+    plt.ylim(65, 75)
     plt.ylabel('Learners (%)', labelpad=-20)
     ylim = plt.ylim()
-    plt.yticks(numpy.linspace(ylim[0], ylim[1], 11), [ylim[0]] + [''] * 9 + [ylim[1]])
+    plt.yticks(numpy.linspace(ylim[0], ylim[1], 15), [ylim[0]] + [''] * 13 + [ylim[1]])
     plt.yticks(
         plt.yticks()[0],
         [int(plt.yticks()[0][0])] + [''] * (len(plt.yticks()[0]) - 2) + [int(plt.yticks()[0][-1])]
@@ -134,10 +136,10 @@ def plot_summary(title=None):
     plt.title('(C) Long-term survival')
     _survival(survival, 0, 100, '100 ans.')
     _survival(survival_time, 1, 600, '10 min.')
-    plt.ylim(10, 35)
+    plt.ylim(25, 35)
     plt.ylabel('Learners (%)', labelpad=-20)
     ylim = plt.ylim()
-    plt.yticks(numpy.linspace(ylim[0], ylim[1], 11), [ylim[0]] + [''] * 9 + [ylim[1]])
+    plt.yticks(numpy.linspace(ylim[0], ylim[1], 15), [ylim[0]] + [''] * 13 + [ylim[1]])
     plt.yticks(
         plt.yticks()[0],
         [int(plt.yticks()[0][0])] + [''] * (len(plt.yticks()[0]) - 2) + [int(plt.yticks()[0][-1])]

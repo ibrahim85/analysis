@@ -61,8 +61,8 @@ def load_success(first=None, round_base=None, reference=True):
 
 
 @spiderpig()
-def load_school_usage(data_dir='data', school_threshold=10):
-    answers = load_answers()
+def load_school_usage(data_dir='data', school_threshold=20):
+    answers = _load_answers()
     sessions = pandas.read_csv(os.path.join(data_dir, 'ip_address.csv'), index_col=False)
     user_ips = pandas.merge(answers, sessions, on=['session_id', 'user_id']).drop_duplicates('user_id').set_index('user_id')['ip_address']
     ip_counts = user_ips.reset_index().groupby('ip_address').apply(len)
@@ -114,8 +114,11 @@ def _load_options(data_dir='data'):
 
 
 @spiderpig()
-def load_answers(contexts=None):
+def load_answers(contexts=None, school=None, top_contexts=None):
     answers = _load_answers()
+    if top_contexts is not None:
+        contexts = answers.groupby(['context_name', 'term_type']).apply(len).reset_index().sort_values(by=0, ascending=False)[['context_name', 'term_type']].values[:top_contexts]
+        contexts = ['{}:{}'.format(c, t) for c, t in contexts]
     if contexts:
         answers_filter = None
         for context in contexts:
@@ -128,6 +131,10 @@ def load_answers(contexts=None):
             else:
                 answers_filter |= current_filter
         answers = answers[answers_filter]
+    school_usage = load_school_usage().reset_index().rename(columns={'ip_address': 'school'})
+    answers = pandas.merge(answers, school_usage, on='user_id', how='inner')
+    if school is not None:
+        answers = answers[answers['school'] == school]
     return answers
 
 
@@ -195,11 +202,11 @@ def load_ratings(data_dir='data'):
         1: 'easy',
         2: ' appropriate',
         3: 'difficult',
-        4: 'much easier',
-        5: 'bit easier',
+        4: 'much harder',
+        5: 'bit harder',
         6: 'the same',
-        7: 'bit harder',
-        8: 'much harder',
+        7: 'bit easier',
+        8: 'much easier',
     }
     ratings['label'] = ratings['value'].apply(lambda v: '{} - {}'.format(v, labels[v]))
     answers = load_answers()
@@ -231,21 +238,26 @@ def load_conf_difficulty_by_attempt(filter_passive_users=False, groupby=None):
 @spiderpig()
 def load_ratings_with_contexts():
     ratings = load_ratings()
-    answers = load_answers().drop_duplicates(['user_id', 'practice_set_id']).sort_values(by='time')
+    answers = _load_answers()
+    error_rate = answers.groupby('practice_set_id').apply(lambda g: _round(100 * (g['item_asked_id'] != g['item_answered_id']).mean())).reset_index().rename(columns={0: 'error_rate'})
+    answers = answers.drop_duplicates(['user_id', 'practice_set_id']).sort_values(by='time')
+    answers = pandas.merge(answers, error_rate, on='practice_set_id', how='inner')
     result = []
     for user, inserted, value, label in ratings[['user_id', 'inserted', 'value', 'label']].values:
         av_answers = answers[(answers['user_id'] == user) & (answers['time'] <= inserted)]
         if len(av_answers) == 0:
             print('INVALID TIME')
             continue
-        context_name, term_type = av_answers[['context_name', 'term_type']].values[-1]
+        context_name, term_type, error_rate, experiment_setup_name = av_answers[['context_name', 'term_type', 'error_rate', 'experiment_setup_name']].values[-1]
         result.append({
             'user': user,
             'time': inserted,
             'value': value,
             'label': label,
             'context_name': context_name,
-            'term_type': term_type
+            'term_type': term_type,
+            'error_rate': error_rate,
+            'experiment_setup_name': experiment_setup_name,
         })
     return pandas.DataFrame(result)
 
