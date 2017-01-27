@@ -146,8 +146,8 @@ def execute(filter_type='app', fmaid=None, drop_sides=False, relations=None):
     terminology = load_terminology()
     terminology['latin_name'] = terminology['latin_name'].apply(lambda n: n.split('|')[0] if n else None)
     terminology['FMA'] = terminology['FMA'].apply(lambda fma: fma.replace('FMA', ''))
-    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_from', 'latin_name': 'latin_name_from'}), on='fmaid_from')
-    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_to', 'latin_name': 'latin_name_to'}), on='fmaid_to')
+    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_from', 'latin_name': 'latin_name_from'}), on='fmaid_from', how='left')
+    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_to', 'latin_name': 'latin_name_to'}), on='fmaid_to', how='left')
     filtered = ontology[ontology['relation'].isin(relations | {k for k, v in OPPOSITES.items() if v in relations})]
     result = {}
     for fmaid_from, fmaid_to, english_name_from, english_name_to, latin_name_from, latin_name_to, relation, taid_from, taid_to, anatomid_from, anatomid_to in filtered[['fmaid_from', 'fmaid_to', 'english_name_from', 'english_name_to', 'latin_name_from', 'latin_name_to', 'relation', 'taid_from', 'taid_to', 'anatomid_from', 'anatomid_to']].values:
