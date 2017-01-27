@@ -13,3 +13,4 @@ def execute(output_dir='output'):
         }])
     terms = flashcards.groupby(['term_name', 'term_id']).apply(_aggr).reset_index().drop('level_2', 1)
     pandas.merge(mapping, terms[['term_id', 'first_time_success_prob_avg']].rename(columns={'term_id': 'anatom_id'}), how='inner', on='anatom_id').to_csv('{}/terms_mapping.csv'.format(output_dir), index=False)
+

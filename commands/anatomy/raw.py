@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
-from fma.graph import load_graph, load_ontology
+from fma.graph import load_ontology
 import random
 
 
@@ -23,30 +23,41 @@ def load_term_id_mapping(data_dir):
     fma_name_fields = [
         'http://purl.org/sig/ont/fma/non-English_equivalent',
         'http://purl.org/sig/ont/fma/TA_ID',
+        'http://purl.org/sig/ont/fma/preferred_name'
     ]
     for fma_id, fma_term in fma_ontology['terms'].items():
         for name_field in fma_name_fields:
             for name in fma_term['info'].get(name_field, []):
+                name = name.lower()
                 fma_mapping[name] = fma_id.replace('http://purl.org/sig/ont/fma/fma', '')
+                if name.endswith('s'):
+                    fma_mapping[name[:-1]] = fma_id.replace('http://purl.org/sig/ont/fma/fma', '')
     flashcards = load_flashcards()
     terms = []
     for term in flashcards['terms']:
         to_save = {}
-        fma_id = fma_mapping.get(term['id'])
+        fma_id = fma_mapping.get(term['id'].lower())
         if fma_id is not None:
             to_save['fma_id'] = fma_id
         else:
-            for v in term['name-la'].split(';'):
-                fma_id = fma_mapping.get(v)
-                if fma_id is None:
-                    continue
-                if 'fma_id' in to_save and to_save['fma_id'] != fma_id:
-                    raise Exception('FMA ID is not unique based on latin name.')
-                to_save['fma_id'] = fma_id
+            for lang in ['la', 'en']:
+                for v in term['name-{}'.format(lang)].split(';'):
+                    fma_id = fma_mapping.get(v.lower())
+                    if fma_id is None:
+                        fma_id = fma_mapping.get('{}s'.format(v.lower()))
+                    if fma_id is None:
+                        continue
+                    if 'fma_id' in to_save and to_save['fma_id'] != fma_id:
+                        print('FMA ID is not unique based on name {}.'.format(v))
+                        to_save['fma_id'] = 'duplicate'
+                        # raise Exception('FMA ID is not unique based on name {}.'.format(v))
+                    to_save['fma_id'] = fma_id
         for key, value in term.items():
             to_save['anatom_{}'.format(key.replace('-', '_'))] = value
         if 'fma_id' in to_save:
             to_save['fma_name'] = fma_ontology['terms']['http://purl.org/sig/ont/fma/fma{}'.format(to_save['fma_id'])]['info']['http://purl.org/sig/ont/fma/preferred_name'][0]
+            non_english = fma_ontology['terms']['http://purl.org/sig/ont/fma/fma{}'.format(to_save['fma_id'])]['info'].get('http://purl.org/sig/ont/fma/non-English_equivalent/')
+            to_save['fma_name_other'] = None if non_english is None else non_english[0]
         terms.append(to_save)
     return pandas.DataFrame(terms)
 

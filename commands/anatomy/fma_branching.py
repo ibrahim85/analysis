@@ -1,7 +1,9 @@
 from .fma_ontology import load_ontology_as_dataframe
+from fma.ontology import load_terminology
 from itertools import chain
 from spiderpig import spiderpig
 from spiderpig.msg import info
+import pandas
 import yaml
 import json
 
@@ -114,7 +116,7 @@ def remove_by_predicate(record, predicate, follow_key):
 
 def extract_relation(record, relation):
     new_record = {}
-    for key in ['fmaid', 'taid', 'name']:
+    for key in ['fmaid', 'taid', 'name_en', 'name_la']:
         if key not in record:
             continue
         new_record[key] = record[key]
@@ -140,19 +142,27 @@ def execute(filter_type='app', fmaid=None, drop_sides=False, relations=None):
         relations = RELATIONS
     relations = set(relations)
     filter_fmaid = fmaid
-    ontology = load_ontology_as_dataframe(filter_type='none')
-    result = {}
+    ontology = load_ontology_as_dataframe(filter_type='none').rename(columns={'name_to': 'english_name_to', 'name_from': 'english_name_from'})
+    terminology = load_terminology()
+    terminology['latin_name'] = terminology['latin_name'].apply(lambda n: n.split('|')[0] if n else None)
+    terminology['FMA'] = terminology['FMA'].apply(lambda fma: fma.replace('FMA', ''))
+    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_from', 'latin_name': 'latin_name_from'}), on='fmaid_from')
+    ontology = pandas.merge(ontology, terminology[['FMA', 'latin_name']].rename(columns={'FMA': 'fmaid_to', 'latin_name': 'latin_name_to'}), on='fmaid_to')
     filtered = ontology[ontology['relation'].isin(relations | {k for k, v in OPPOSITES.items() if v in relations})]
-    for fmaid_from, fmaid_to, name_from, name_to, relation, taid_from, taid_to, anatomid_from, anatomid_to in filtered[['fmaid_from', 'fmaid_to', 'name_from', 'name_to', 'relation', 'taid_from', 'taid_to', 'anatomid_from', 'anatomid_to']].values:
+    result = {}
+    for fmaid_from, fmaid_to, english_name_from, english_name_to, latin_name_from, latin_name_to, relation, taid_from, taid_to, anatomid_from, anatomid_to in filtered[['fmaid_from', 'fmaid_to', 'english_name_from', 'english_name_to', 'latin_name_from', 'latin_name_to', 'relation', 'taid_from', 'taid_to', 'anatomid_from', 'anatomid_to']].values:
         if OPPOSITES.get(relation) in relations:
             relation = OPPOSITES[relation]
             fmaid_from, fmaid_to = fmaid_to, fmaid_from
             taid_from, taid_to = taid_to, taid_from
-            name_from, name_to = name_to, name_from
+            english_name_from, english_name_to = english_name_to, english_name_from
+            latin_name_from, latin_name_to = latin_name_to, latin_name_from
             anatomid_from, anatomid_to = anatomid_to, anatomid_from
         record = result.get(fmaid_from, {})
         record['fmaid'] = fmaid_from
-        record['name'] = name_from
+        record['name_en'] = english_name_from
+        if isinstance(latin_name_from, str):
+            record['name_la'] = latin_name_from
         if isinstance(anatomid_from, str):
             record['anatomid'] = anatomid_from
         if taid_from:
@@ -167,8 +177,10 @@ def execute(filter_type='app', fmaid=None, drop_sides=False, relations=None):
         if fmaid_to not in result:
             record = {
                 'fmaid': fmaid_to,
-                'name': name_to,
+                'name_en': english_name_to,
             }
+            if isinstance(latin_name_to, str):
+                record['name_la'] = latin_name_to
             if taid_to:
                 record['taid'] = taid_to
             if isinstance(anatomid_to, str):
@@ -196,7 +208,7 @@ def execute(filter_type='app', fmaid=None, drop_sides=False, relations=None):
     if drop_sides:
 
         def _is_not_side(r):
-            name = r['name'].lower()
+            name = r['name_en'].lower()
             if name.startswith('left') or name.startswith('right'):
                 return False
             if ' of left ' in name or ' of right ' in name:
