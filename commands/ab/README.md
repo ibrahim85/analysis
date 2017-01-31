@@ -5,11 +5,11 @@ The data set is based on the online system
 available in Czech, English, German, Spanish, and Russian, most users are from Czech
 Republic ({cz_percentage} %) and Slovakia ({sk_percentage} %). The system uses
 adaptive algorithms for choosing questions, these algorithms are described in
-detail in [[1](#reference)] and [[2](#reference)].
+detail in [[1](#references)] and [[2](#references)].
 
 This is a available data set collected to evaluate the system, it is static and
 caputers users' interactions from {experiment_start} to {experiment_end}.
-Results and description of studied conditions are available in [[3](#reference)]. The basic
+Results and description of studied conditions are available in [[3](#references)]. The basic
 statistics of the data set are as follows:
 
   - {total_students:,} learners;
