@@ -242,13 +242,21 @@ def load_ratings_with_contexts():
     error_rate = answers.groupby('practice_set_id').apply(lambda g: _round(100 * (g['item_asked_id'] != g['item_answered_id']).mean())).reset_index().rename(columns={0: 'error_rate'})
     answers = answers.drop_duplicates(['user_id', 'practice_set_id']).sort_values(by='time')
     answers = pandas.merge(answers, error_rate, on='practice_set_id', how='inner')
+
+    def _compute_order(group):
+        sets = group['practice_set_id'].unique()
+        sets = dict(zip(sets, range(1, len(sets) + 1)))
+        group['practice_set_order'] = group['practice_set_id'].apply(lambda i: sets[i])
+        return group
+    answers = answers.sort_values(by=['time']).groupby(['user_id', 'context_name', 'term_type']).apply(_compute_order).reset_index()
+    print(answers)
     result = []
     for user, inserted, value, label in ratings[['user_id', 'inserted', 'value', 'label']].values:
         av_answers = answers[(answers['user_id'] == user) & (answers['time'] <= inserted)]
         if len(av_answers) == 0:
             print('INVALID TIME')
             continue
-        context_name, term_type, error_rate, experiment_setup_name = av_answers[['context_name', 'term_type', 'error_rate', 'experiment_setup_name']].values[-1]
+        context_name, term_type, error_rate, experiment_setup_name, practice_set_order = av_answers[['context_name', 'term_type', 'error_rate', 'experiment_setup_name', 'practice_set_order']].values[-1]
         result.append({
             'user': user,
             'time': inserted,
@@ -257,6 +265,7 @@ def load_ratings_with_contexts():
             'context_name': context_name,
             'term_type': term_type,
             'error_rate': error_rate,
+            'practice_set_order': practice_set_order,
             'experiment_setup_name': experiment_setup_name,
         })
     return pandas.DataFrame(result)

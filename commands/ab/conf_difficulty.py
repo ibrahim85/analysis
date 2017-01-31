@@ -8,8 +8,10 @@ import pandas
 import seaborn as sns
 
 
-def plot_label_by_success(setup_name, school, context_name=None, term_type=None, legend=True, linetype='-', show_data_size=True):
+def plot_label_by_success(setup_name, school, context_name=None, term_type=None, legend=True, linetype='-', show_data_size=True, set_order=None):
     data = load_ratings_with_contexts()
+    if set_order is not None:
+        data = data[data['practice_set_order'] == set_order]
     data = data[(data['experiment_setup_name'] == setup_name)]
     if context_name is not None:
         data = data[data['context_name'] == context_name]
@@ -32,13 +34,13 @@ def plot_label_by_success(setup_name, school, context_name=None, term_type=None,
                 'learners_max': 100 * mean[1][1],
             })
         return pandas.DataFrame(result)
-    to_plot = data.groupby(['experiment_setup_name', 'error_rate']).apply(_apply).reset_index()
+    to_plot = data.groupby(['experiment_setup_name', 'error_rate']).apply(_apply).reset_index().sort_values(by=['label', 'error_rate'])
     for i, (label, label_data) in enumerate(to_plot.groupby('label')):
         plt.plot(
             label_data['error_rate'],
             label_data['learners'],
             linetype,
-            label=label,
+            label=label.split('-')[-1],
             color=output.palette()[i],
             marker='.',
             markersize=20
@@ -50,8 +52,8 @@ def plot_label_by_success(setup_name, school, context_name=None, term_type=None,
             color=output.palette()[i], alpha=0.35
         )
     if legend:
-        plt.legend(ncol=5, loc='upper left', frameon=True, fontsize='xx-small')
-    plt.ylabel('label (%)')
+        plt.legend(ncol=3, loc='upper left', frameon=True)
+    plt.ylabel('Label (%)')
     plt.xlabel('Real error rate')
     plt.gca().xaxis.grid(True)
     plt.gca().yaxis.grid(True)
@@ -60,7 +62,7 @@ def plot_label_by_success(setup_name, school, context_name=None, term_type=None,
         size = data.groupby('error_rate').apply(len).reset_index().rename(columns={0: 'size'})
         plt.plot(size['error_rate'], size['size'], '.-', color='gray')
         plt.ylabel('Data size')
-    plt.ylim(0, 60)
+    plt.ylim(0, 70)
 
 
 def plot_conf_difficulty_by_attempt(length, filter_passive_users):
@@ -109,7 +111,7 @@ def execute(length=50, school_diff=False, context_diff=False):
                 plt.ylim(0, plt.ylim()[1])
         output.savefig('label_by_success', tight_layout=False)
     else:
-        rcParams['figure.figsize'] = 12, 7
+        rcParams['figure.figsize'] = 8.5, 4
         for col, (setup_name, linetype) in enumerate(zip(['placebo', 'adjustment'], ['-', '--'])):
             plot_label_by_success(setup_name, None, legend=(col == 0), show_data_size=False, linetype=linetype)
         output.savefig('label_by_success', tight_layout=False)
